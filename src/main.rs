@@ -1,4 +1,5 @@
-use log::{info, error};
+use log::{info, error, LevelFilter};
+use env_logger::Builder;
 
 mod git;
 mod ignore;
@@ -6,8 +7,11 @@ mod api;
 mod cli;
 
 fn main() {
-    // Initialize the logger
-    env_logger::init();
+    // Initialize the logger with a default level
+    // This will use RUST_LOG if set, otherwise fall back to info level
+    Builder::new()
+        .filter_level(LevelFilter::Info)  // Default level if RUST_LOG is not set
+        .init();
 
     info!("Starting ai-commit");
 
