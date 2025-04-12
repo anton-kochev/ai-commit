@@ -1,6 +1,15 @@
 [package]
-name = "ai_commit"
+name = "ai-commit"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+log = "0.4"
+env_logger = "0.10"
+git2 = "0.16"
+globset = "0.4"
+reqwest = { version = "0.11", features = ["blocking", "json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+dotenv = "0.15"
+dialoguer = "0.10"
