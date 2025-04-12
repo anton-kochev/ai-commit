@@ -2,9 +2,6 @@ use git2::{DiffFormat, Repository};
 use std::path::Path;
 use std::str;
 
-// Import the ignore module to load patterns.
-use crate::ignore;
-
 pub fn get_staged_diff() -> Result<String, git2::Error> {
     // Open the current repository.
     let repo = Repository::open(".")?;
@@ -75,15 +72,54 @@ pub fn commit_changes(summary: &str, description: &str) -> Result<(), git2::Erro
     // Create commit signature (user name, email, current time) from git config
     let signature = repo.signature()?;
 
-    // Perform the commit with no parents (will be added automatically)
-    repo.commit(
-        Some("HEAD"),      // point HEAD to the new commit
-        &signature,        // author
-        &signature,        // committer (same as author)
-        &format!("{}\n\n{}", summary, description),  // commit message
+    // Try to commit with HEAD as parent first
+    let commit_result = repo.commit(
+        Some("HEAD"),
+        &signature,
+        &signature,
+        &format!("{}\n\n{}", summary, description),
         &tree,
-        &[]  // empty slice for parents
-    )?;
+        &[]  // Start with no parents
+    );
 
-    Ok(())
+    // If that fails with "current tip is not the first parent", try to get the current HEAD
+    // and use it as a parent
+    match commit_result {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            if e.message().contains("current tip is not the first parent") {
+                eprintln!("Warning: HEAD has changed, attempting to get current HEAD");
+
+                // Try to get the current HEAD commit
+                if let Ok(head) = repo.head() {
+                    if let Ok(head_commit) = head.peel_to_commit() {
+                        // Try again with the current HEAD as parent
+                        repo.commit(
+                            Some("HEAD"),
+                            &signature,
+                            &signature,
+                            &format!("{}\n\n{}", summary, description),
+                            &tree,
+                            &[&head_commit]
+                        )?;
+                        return Ok(());
+                    }
+                }
+
+                // If all else fails, try to commit without parents
+                eprintln!("Warning: Could not get HEAD commit, attempting to commit without parents");
+                repo.commit(
+                    Some("HEAD"),
+                    &signature,
+                    &signature,
+                    &format!("{}\n\n{}", summary, description),
+                    &tree,
+                    &[]
+                )?;
+                Ok(())
+            } else {
+                Err(e)
+            }
+        }
+    }
 }

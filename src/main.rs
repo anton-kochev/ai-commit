@@ -24,7 +24,6 @@ fn main() {
                 info!("No staged changes found.");
                 return;
             }
-            info!("Staged diff:\n{}", diff);
             diff
         }
         Err(e) => {
