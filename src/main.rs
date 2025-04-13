@@ -1,23 +1,32 @@
-use log::{info, error, LevelFilter};
 use env_logger::Builder;
+use log::{error, info, trace, LevelFilter};
 
-mod git;
-mod ignore;
 mod api;
 mod cli;
+mod git;
+mod ignore;
 
 fn main() {
     // Initialize the logger with a default level
     // This will use RUST_LOG if set, otherwise fall back to info level
     Builder::new()
-        .filter_level(LevelFilter::Info)  // Default level if RUST_LOG is not set
+        .filter_level(LevelFilter::Info) // Default level if RUST_LOG is not set
         .init();
 
-    info!("Starting ai-commit");
+    trace!("Starting ai-commit");
+
+    // Load environment variables from .env file
+    dotenv::dotenv().ok();
+
+    // Check if we should run in dry-run mode
+    let dry_run = std::env::var("DRY_RUN").is_ok();
+    if dry_run {
+        info!("Running in dry-run mode - API calls will be traced but not executed");
+    }
 
     // Load ignore patterns from the repository's .gitignore file
     match ignore::load_ignore_patterns(std::env::current_dir().unwrap().as_path()) {
-        Ok(set) => info!("Loaded {} ignore patterns", set.len()),
+        Ok(set) => trace!("Loaded {} ignore patterns", set.len()),
         Err(e) => error!("Error loading ignore patterns: {}", e),
     }
 
@@ -37,7 +46,7 @@ fn main() {
     };
 
     // Generate the initial commit message suggestion
-    let mut commit_msg = match api::generate_commit_message(&diff) {
+    let mut commit_msg = match api::generate_commit_message(&diff, dry_run) {
         Ok(msg) => msg,
         Err(e) => {
             error!("Error generating commit message: {}", e);
@@ -58,7 +67,7 @@ fn main() {
                         if !commit_msg.description.is_empty() {
                             info!("Description: {}", commit_msg.description);
                         }
-                    },
+                    }
                     Err(e) => {
                         error!("Failed to commit changes: {}", e);
                     }
@@ -67,7 +76,7 @@ fn main() {
             }
             cli::UserChoice::Regenerate => {
                 info!("User chose to regenerate the commit message.");
-                match api::generate_commit_message(&diff) {
+                match api::generate_commit_message(&diff, dry_run) {
                     Ok(new_msg) => commit_msg = new_msg,
                     Err(e) => {
                         error!("Error regenerating commit message: {}", e);

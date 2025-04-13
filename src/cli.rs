@@ -1,5 +1,5 @@
-use dialoguer::Select;
 use crate::api;
+use dialoguer::Select;
 
 /// The options presented to the user.
 pub enum UserChoice {
@@ -18,16 +18,12 @@ pub fn prompt_user_for_action(commit_msg: &api::CommitMessage) -> UserChoice {
     }
     println!();
 
-    let options = &[
-        "✅ Use this message",
-        "🔄 Regenerate message",
-        "❌ Cancel",
-    ];
+    let options = &["✅ Use this message", "🔄 Regenerate message", "❌ Cancel"];
 
     let selection = Select::new()
         .with_prompt("What would you like to do?")
         .items(options)
-        .default(0)
+        .default(2)
         .interact()
         .unwrap_or(2);
 

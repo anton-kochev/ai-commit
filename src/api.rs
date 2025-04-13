@@ -1,10 +1,8 @@
-use dotenv::dotenv;
+use log::trace;
 use reqwest::blocking::Client;
 use reqwest::header::CONTENT_TYPE;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::env;
-use std::error::Error;
 
 /// Structs for deserializing the OpenAI Chat Completions response.
 #[derive(Deserialize)]
@@ -30,13 +28,26 @@ pub struct CommitMessage {
 }
 
 /// Generates a commit message by sending the provided diff to the OpenAI ChatGPT API.
+/// If dry_run is true, it will trace the request instead of making an actual API call.
 /// Returns a CommitMessage struct containing the summary and description.
-pub fn generate_commit_message(diff: &str) -> Result<CommitMessage, Box<dyn Error>> {
-    // Load environment variables from a .env file if present.
-    dotenv().ok();
+pub fn generate_commit_message(
+    diff: &str,
+    dry_run: bool,
+) -> Result<CommitMessage, Box<dyn std::error::Error>> {
+    if dry_run {
+        trace!(
+            "[DRY RUN] Would send request to OpenAI API with diff: {}",
+            diff
+        );
+        // Return a mock commit message in dry-run mode
+        return Ok(CommitMessage {
+            summary: "Dry run commit message".to_string(),
+            description: "This is a mock commit message generated in dry run mode.".to_string(),
+        });
+    }
 
-    // Retrieve the API key from the environment.
-    let api_key = env::var("OPENAI_API_KEY")?;
+    // Get API key from environment
+    let api_key = std::env::var("OPENAI_API_KEY")?;
     let client = Client::new();
 
     // Updated prompt to request JSON format
@@ -88,8 +99,12 @@ pub fn generate_commit_message(diff: &str) -> Result<CommitMessage, Box<dyn Erro
         .ok_or("No response from API")?;
 
     // Parse the AI's response (which should be JSON) into our CommitMessage struct
-    let commit_message: CommitMessage = serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse AI response as JSON: {}. Response was: {}", e, content))?;
+    let commit_message: CommitMessage = serde_json::from_str(&content).map_err(|e| {
+        format!(
+            "Failed to parse AI response as JSON: {}. Response was: {}",
+            e, content
+        )
+    })?;
 
     Ok(commit_message)
 }
