@@ -4,6 +4,8 @@ use reqwest::header::CONTENT_TYPE;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
+use crate::cost;
+
 /// Structs for deserializing the OpenAI Chat Completions response.
 #[derive(Deserialize)]
 pub struct ChatResponse {
@@ -69,9 +71,18 @@ pub fn generate_commit_message(
         diff
     );
 
+    // Estimate cost before proceeding
+    let model = "gpt-4"; // Default model
+    let (token_count, estimated_cost) = cost::estimate_cost(&prompt, model);
+
+    // Prompt user for confirmation
+    if !cost::prompt_for_confirmation(token_count, estimated_cost) {
+        return Err("User canceled the operation".into());
+    }
+
     // Build the JSON request body.
     let request_body = json!({
-       "model": "gpt-4",
+       "model": model,
        "messages": [
             { "role": "user", "content": prompt }
        ]
