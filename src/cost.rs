@@ -51,8 +51,10 @@ pub fn estimate_cost(prompt: &str, model: &str) -> (usize, f64) {
 
 /// Prompts the user for confirmation based on the token count and estimated cost
 pub fn prompt_for_confirmation(token_count: usize, estimated_cost: f64) -> bool {
-    info!("Input size: {} tokens (approx. ${:.3}). Proceed with this request? [Y/n]",
-          token_count, estimated_cost);
+    info!(
+        "Input size: {} tokens (approx. ${:.3}). Proceed with this request? [Y/N]",
+        token_count, estimated_cost
+    );
 
     let skip_confirmation = env::var("AI_COMMIT_SKIP_COST_CONFIRM").is_ok();
     if skip_confirmation {

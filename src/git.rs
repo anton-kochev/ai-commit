@@ -54,8 +54,8 @@ pub fn get_staged_diff() -> Result<String, git2::Error> {
     Ok(diff_str)
 }
 
-/// Commit staged changes with the given summary and description
-pub fn commit_changes(summary: &str, description: &str) -> Result<(), git2::Error> {
+/// Commit staged changes with the given commit message
+pub fn commit_changes(commit_message: &str) -> Result<(), git2::Error> {
     // Open the current repository
     let repo = Repository::open(".")?;
 
@@ -77,7 +77,7 @@ pub fn commit_changes(summary: &str, description: &str) -> Result<(), git2::Erro
         Some("HEAD"),
         &signature,
         &signature,
-        &format!("{}\n\n{}", summary, description),
+        commit_message,
         &tree,
         &[]  // Start with no parents
     );
@@ -98,7 +98,7 @@ pub fn commit_changes(summary: &str, description: &str) -> Result<(), git2::Erro
                             Some("HEAD"),
                             &signature,
                             &signature,
-                            &format!("{}\n\n{}", summary, description),
+                            commit_message,
                             &tree,
                             &[&head_commit]
                         )?;
@@ -112,7 +112,7 @@ pub fn commit_changes(summary: &str, description: &str) -> Result<(), git2::Erro
                     Some("HEAD"),
                     &signature,
                     &signature,
-                    &format!("{}\n\n{}", summary, description),
+                    commit_message,
                     &tree,
                     &[]
                 )?;

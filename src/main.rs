@@ -17,7 +17,7 @@ fn main() {
         .filter_level(LevelFilter::Info) // Default level if RUST_LOG is not set
         .init();
 
-    trace!("Starting ai-commit");
+    trace!("Starting ai-commit!");
 
     // Load environment variables from .env file
     dotenv::dotenv().ok();
@@ -63,10 +63,9 @@ fn main() {
         match cli::prompt_user_for_action(&commit_message) {
             UserChoice::Commit => {
                 info!("User accepted the commit message.");
+
                 // Commit the changes with the accepted message
-                if let Err(e) =
-                    git::commit_changes(&commit_message.summary, &commit_message.description)
-                {
+                if let Err(e) = git::commit_changes(&commit_message) {
                     error!("Failed to commit changes: {}", e);
                     return;
                 }
@@ -91,8 +90,5 @@ fn main() {
         }
     }
 
-    info!(
-        "Successfully committed changes with message: {}",
-        commit_message.summary
-    );
+    info!("Successfully committed changes");
 }

@@ -1,7 +1,7 @@
 use log::trace;
 use reqwest::blocking::Client;
 use reqwest::header::CONTENT_TYPE;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
 
 use crate::cost;
@@ -22,68 +22,61 @@ pub struct ChatMessageResponse {
     pub content: String,
 }
 
-/// Struct for the commit message format
-#[derive(Debug, Deserialize, Serialize)]
-pub struct CommitMessage {
-    pub summary: String,
-    pub description: String,
-}
-
 /// Generates a commit message by sending the provided diff to the OpenAI ChatGPT API.
 /// If dry_run is true, it will trace the request instead of making an actual API call.
-/// Returns a CommitMessage struct containing the summary and description.
+/// Returns the commit message as a string.
 pub fn generate_commit_message(
     diff: &str,
     dry_run: bool,
-) -> Result<CommitMessage, Box<dyn std::error::Error>> {
+) -> Result<String, Box<dyn std::error::Error>> {
     if dry_run {
         trace!(
             "[DRY RUN] Would send request to OpenAI API with diff: {}",
             diff
         );
         // Return a mock commit message in dry-run mode
-        return Ok(CommitMessage {
-            summary: "Dry run commit message".to_string(),
-            description: "This is a mock commit message generated in dry run mode.".to_string(),
-        });
+        return Ok(
+            "Dry run commit message\n\nThis is a mock commit message generated in dry run mode."
+                .to_string(),
+        );
     }
 
     // Get API key from environment
     let api_key = std::env::var("OPENAI_API_KEY")?;
-    let client = Client::new();
 
-    // Updated prompt to request JSON format
+    // Create a client with increased timeout
+    let client = Client::builder()
+        .timeout(std::time::Duration::from_secs(60)) // Increase timeout to 60 seconds
+        .build()?;
+
+    // Define the model directly in the code
+    let model = "o1"; //"gpt-4.1-mini";
+    trace!("Using OpenAI model: {}", model);
+
+    // Updated prompt to request string format
     let prompt = format!(
-        r#"You are an assistant that writes structured Git commit messages based on code diffs.
+        r#"
+        You are an expert commit message generator. Given a Git diff, produce a high-quality commit message as a single string formatted like this:
 
-        Analyze the following code diff and return a JSON object in this format:
-
-        {{
-            "summary": "short, meaningful summary (one line)",
-            "description": "brief but detailed explanation of important changes (2–4 lines max)"
-        }}
+        "{{Summary}}"
+        OR
+        "{{Summary}}\n\n{{Description}}"
 
         Guidelines:
-        - Only describe changes that matter (skip trivial or cosmetic edits)
-        - Focus on intent and effect of the change
-        - Group related edits together
-        - Avoid file names or line numbers unless critical
-        - Do NOT include unnecessary details or noise
-        - Return valid JSON only
+        - "Summary" should be a one-line description of the key change, starting with a capital letter.
+        - If the change needs more detail, add "Description" on a new paragraph (after a double newline). It should also start with a capital letter and provide extra insight without duplicating the summary.
+        - Skip trivial changes (e.g., formatting, comments) and keep the output focused.
+        - Return only the resulting string without any extra text.
+        - Use dash points.
 
-        Code diff:
+        Git diff:
         {}
         "#,
         diff
     );
 
     // Estimate cost before proceeding
-    // Model	Context Limit	Cost (per 1K tokens)	Notes
-    // gpt-3.5-turbo	4K tokens	$0.0005 / $0.0015	Best cheap option
-    // gpt-3.5-turbo-16k	16K tokens	$0.0005 / $0.0015	For longer diffs
-    // gpt-4-turbo	128K tokens	$0.01 / $0.03	For premium needs only
-    let model = "gpt-4.1-mini"; // Default model
-    let (token_count, estimated_cost) = cost::estimate_cost(&prompt, model);
+    let (token_count, estimated_cost) = cost::estimate_cost(&prompt, &model);
 
     // Prompt user for confirmation
     if !cost::prompt_for_confirmation(token_count, estimated_cost) {
@@ -119,13 +112,6 @@ pub fn generate_commit_message(
         .map(|choice| choice.message.content.clone())
         .ok_or("No response from API")?;
 
-    // Parse the AI's response (which should be JSON) into our CommitMessage struct
-    let commit_message: CommitMessage = serde_json::from_str(&content).map_err(|e| {
-        format!(
-            "Failed to parse AI response as JSON: {}. Response was: {}",
-            e, content
-        )
-    })?;
-
-    Ok(commit_message)
+    // Return the trimmed content
+    Ok(content.trim().to_string())
 }
