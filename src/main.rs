@@ -1,6 +1,7 @@
 use dotenv;
 use env_logger::Builder;
 use log::{error, info, trace, LevelFilter};
+use clap::Parser;
 
 mod api;
 mod cli;
@@ -10,7 +11,19 @@ mod ignore;
 
 use cli::UserChoice;
 
+/// Command-line arguments for ai-commit
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Run in dry-run mode (no API calls will be made)
+    #[arg(long)]
+    dry_run: bool,
+}
+
 fn main() {
+    // Parse command-line arguments
+    let args = Args::parse();
+
     // Initialize the logger with a default level
     // This will use RUST_LOG if set, otherwise fall back to info level
     Builder::new()
@@ -23,8 +36,7 @@ fn main() {
     dotenv::dotenv().ok();
 
     // Check if we should run in dry-run mode
-    let dry_run = std::env::var("DRY_RUN").is_ok();
-    if dry_run {
+    if args.dry_run {
         info!("Running in dry-run mode (no API calls will be made)");
     }
 
@@ -50,7 +62,7 @@ fn main() {
     };
 
     // Generate the initial commit message suggestion
-    let mut commit_message = match api::generate_commit_message(&diff, dry_run) {
+    let mut commit_message = match api::generate_commit_message(&diff, args.dry_run) {
         Ok(msg) => msg,
         Err(e) => {
             error!("Failed to generate commit message: {}", e);
@@ -73,7 +85,7 @@ fn main() {
             }
             UserChoice::Regenerate => {
                 info!("User chose to regenerate the commit message.");
-                match api::generate_commit_message(&diff, dry_run) {
+                match api::generate_commit_message(&diff, args.dry_run) {
                     Ok(new_msg) => {
                         commit_message = new_msg;
                     }

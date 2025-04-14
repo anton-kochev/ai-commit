@@ -53,7 +53,6 @@ AI Commit can be configured using environment variables:
 
 - `OPENAI_API_KEY`: Your OpenAI API key (required)
 - `AI_COMMIT_MODEL`: The OpenAI model to use (default: "gpt-3.5-turbo-16k")
-- `DRY_RUN`: Set to any value to enable dry-run mode (no API calls)
 - `AI_COMMIT_SKIP_COST_CONFIRM`: Set to any value to skip cost confirmation
 - `RUST_LOG`: Set the log level (default: "info")
 
@@ -62,6 +61,20 @@ You can set these in a `.env` file in your project root:
 ``` plaintext
 OPENAI_API_KEY=your-api-key-here
 AI_COMMIT_MODEL=gpt-4-turbo
+```
+
+## Command-line Options
+
+AI Commit supports the following command-line options:
+
+- `--dry-run`: Run in dry-run mode (no API calls will be made)
+- `--help`: Show help information
+
+Example:
+
+```bash
+# Run in dry-run mode
+ai-commit --dry-run
 ```
 
 ## Ignoring Files

@@ -58,9 +58,9 @@ pub fn generate_commit_message(
         r#"
         You are an expert commit message generator. Given a Git diff, produce a high-quality commit message as a single string formatted like this:
 
-        "{{Summary}}"
+        {{Summary}}
         OR
-        "{{Summary}}\n\n{{Description}}"
+        {{Summary}}\n\n{{Description}}
 
         Guidelines:
         - "Summary" should be a one-line description of the key change, starting with a capital letter.
