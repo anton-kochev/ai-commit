@@ -1,12 +1,12 @@
+use dotenv;
 use env_logger::Builder;
 use log::{error, info, trace, LevelFilter};
-use dotenv;
 
 mod api;
 mod cli;
+mod cost;
 mod git;
 mod ignore;
-mod cost;
 
 use cli::UserChoice;
 
@@ -64,7 +64,9 @@ fn main() {
             UserChoice::Commit => {
                 info!("User accepted the commit message.");
                 // Commit the changes with the accepted message
-                if let Err(e) = git::commit_changes(&commit_message.summary, &commit_message.description) {
+                if let Err(e) =
+                    git::commit_changes(&commit_message.summary, &commit_message.description)
+                {
                     error!("Failed to commit changes: {}", e);
                     return;
                 }
@@ -89,5 +91,8 @@ fn main() {
         }
     }
 
-    info!("Successfully committed changes with message: {}", commit_message.summary);
+    info!(
+        "Successfully committed changes with message: {}",
+        commit_message.summary
+    );
 }

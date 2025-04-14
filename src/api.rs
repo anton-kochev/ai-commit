@@ -54,25 +54,35 @@ pub fn generate_commit_message(
 
     // Updated prompt to request JSON format
     let prompt = format!(
-        r#"Generate a Git commit message for the following changes.
-        Respond with a JSON object containing:
-        - 'summary': A concise summary (max 64 characters)
-        - 'description': A detailed description (or empty string if not needed)
+        r#"You are an assistant that writes structured Git commit messages based on code diffs.
 
-        Format:
+        Analyze the following code diff and return a JSON object in this format:
+
         {{
-          "summary": "...",
-          "description": "..."
+            "summary": "short, meaningful summary (one line)",
+            "description": "brief but detailed explanation of important changes (2–4 lines max)"
         }}
 
-        Changes to analyze:
+        Guidelines:
+        - Only describe changes that matter (skip trivial or cosmetic edits)
+        - Focus on intent and effect of the change
+        - Group related edits together
+        - Avoid file names or line numbers unless critical
+        - Do NOT include unnecessary details or noise
+        - Return valid JSON only
+
+        Code diff:
         {}
         "#,
         diff
     );
 
     // Estimate cost before proceeding
-    let model = "gpt-4"; // Default model
+    // Model	Context Limit	Cost (per 1K tokens)	Notes
+    // gpt-3.5-turbo	4K tokens	$0.0005 / $0.0015	Best cheap option
+    // gpt-3.5-turbo-16k	16K tokens	$0.0005 / $0.0015	For longer diffs
+    // gpt-4-turbo	128K tokens	$0.01 / $0.03	For premium needs only
+    let model = "gpt-4.1-mini"; // Default model
     let (token_count, estimated_cost) = cost::estimate_cost(&prompt, model);
 
     // Prompt user for confirmation
