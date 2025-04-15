@@ -3,8 +3,7 @@ use reqwest::blocking::Client;
 use reqwest::header::CONTENT_TYPE;
 use serde::Deserialize;
 use serde_json::json;
-
-use crate::cost;
+use std::env;
 
 /// Structs for deserializing the OpenAI Chat Completions response.
 #[derive(Deserialize)]
@@ -26,19 +25,12 @@ pub struct ChatMessageResponse {
 /// If dry_run is true, it will trace the request instead of making an actual API call.
 /// Returns the commit message as a string.
 pub fn generate_commit_message(
-    diff: &str,
-    dry_run: bool,
+    model: &str,
+    prompt: String,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    if dry_run {
-        trace!(
-            "[DRY RUN] Would send request to OpenAI API with diff: {}",
-            diff
-        );
-        // Return a mock commit message in dry-run mode
-        return Ok(
-            "Dry run commit message\n\nThis is a mock commit message generated in dry run mode."
-                .to_string(),
-        );
+    // For non-dry-run mode, prompt for confirmation
+    if !prompt_for_confirmation() {
+        return Err("Operation canceled by user.".into());
     }
 
     // Get API key from environment
@@ -48,40 +40,6 @@ pub fn generate_commit_message(
     let client = Client::builder()
         .timeout(std::time::Duration::from_secs(60)) // Increase timeout to 60 seconds
         .build()?;
-
-    // Define the model directly in the code
-    let model = "o1"; //"gpt-4.1-mini";
-    trace!("Using OpenAI model: {}", model);
-
-    // Updated prompt to request string format
-    let prompt = format!(
-        r#"
-        You are an expert commit message generator. Given a Git diff, produce a high-quality commit message as a single string formatted like this:
-
-        {{Summary}}
-        OR
-        {{Summary}}\n\n{{Description}}
-
-        Guidelines:
-        - "Summary" should be a one-line description of the key change, starting with a capital letter.
-        - If the change needs more detail, add "Description" on a new paragraph (after a double newline). It should also start with a capital letter and provide extra insight without duplicating the summary.
-        - Skip trivial changes (e.g., formatting, comments) and keep the output focused.
-        - Return only the resulting string without any extra text.
-        - Use dash points.
-
-        Git diff:
-        {}
-        "#,
-        diff
-    );
-
-    // Estimate cost before proceeding
-    let (token_count, estimated_cost) = cost::estimate_cost(&prompt, &model);
-
-    // Prompt user for confirmation
-    if !cost::prompt_for_confirmation(token_count, estimated_cost) {
-        return Err("User canceled the operation".into());
-    }
 
     // Build the JSON request body.
     let request_body = json!({
@@ -114,4 +72,23 @@ pub fn generate_commit_message(
 
     // Return the trimmed content
     Ok(content.trim().to_string())
+}
+
+/// Prompts the user for confirmation based on the token count and estimated cost
+pub fn prompt_for_confirmation() -> bool {
+    let skip_confirmation = env::var("AI_COMMIT_SKIP_COST_CONFIRM").is_ok();
+    if skip_confirmation {
+        trace!(
+            "Skipping cost confirmation due to AI_COMMIT_SKIP_COST_CONFIRM environment variable"
+        );
+        return true;
+    }
+
+    // Use dialoguer to prompt the user.
+    // Return the user's choice.
+    dialoguer::Confirm::with_theme(&dialoguer::theme::ColorfulTheme::default())
+        .with_prompt("Do you want to proceed?")
+        .default(false)
+        .interact()
+        .unwrap_or(false)
 }

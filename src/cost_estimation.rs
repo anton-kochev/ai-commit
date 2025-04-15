@@ -1,9 +1,12 @@
-use log::info;
+use log::{info, trace};
 use std::env;
 use tiktoken_rs::cl100k_base;
 
+// Tuple for the cost estimate
+pub type CostEstimate = (usize, f64);
+
 /// Estimates the cost of an API request based on the input token count
-pub fn estimate_cost(prompt: &str, model: &str) -> (usize, f64) {
+pub fn estimate_cost(model: &str, prompt: &str) -> CostEstimate {
     // Count tokens using the appropriate tokenizer
     let tokenizer = cl100k_base().unwrap();
     let token_count = tokenizer.encode_with_special_tokens(prompt).len();
@@ -39,7 +42,7 @@ pub fn estimate_cost(prompt: &str, model: &str) -> (usize, f64) {
 
         // Default fallback for unknown models
         _ => {
-            info!("Unknown model '{}', using default pricing", model);
+            trace!("Unknown model '{}', using default pricing", model);
             0.001 // Default to $1.00 per 1M tokens = $0.001 per 1K tokens
         }
     };
@@ -49,29 +52,10 @@ pub fn estimate_cost(prompt: &str, model: &str) -> (usize, f64) {
     (token_count, estimated_cost)
 }
 
-/// Prompts the user for confirmation based on the token count and estimated cost
-pub fn prompt_for_confirmation(token_count: usize, estimated_cost: f64) -> bool {
+pub fn print_cost(cost_estimate: &CostEstimate) {
+    let (token_count, estimated_cost) = cost_estimate;
     info!(
-        "Input size: {} tokens (approx. ${:.3}). Proceed with this request? [Y/N]",
-        token_count, estimated_cost
+        "Estimated cost: ${:.3} for processing {} tokens.",
+        estimated_cost, token_count
     );
-
-    let skip_confirmation = env::var("AI_COMMIT_SKIP_COST_CONFIRM").is_ok();
-    if skip_confirmation {
-        info!("Skipping cost confirmation due to AI_COMMIT_SKIP_COST_CONFIRM environment variable");
-        return true;
-    }
-
-    // Use dialoguer to prompt the user
-    let proceed = dialoguer::Confirm::new()
-        .with_prompt("")
-        .default(true)
-        .interact()
-        .unwrap_or(false);
-
-    if !proceed {
-        info!("Request canceled by the user.");
-    }
-
-    proceed
 }

@@ -1,13 +1,15 @@
+use clap::Parser;
+use cost_estimation::print_cost;
 use dotenv;
 use env_logger::Builder;
 use log::{error, info, trace, LevelFilter};
-use clap::Parser;
 
 mod api;
 mod cli;
-mod cost;
+mod cost_estimation;
 mod git;
 mod ignore;
+mod prompt;
 
 use cli::UserChoice;
 
@@ -35,10 +37,10 @@ fn main() {
     // Load environment variables from .env file
     dotenv::dotenv().ok();
 
-    // Check if we should run in dry-run mode
-    if args.dry_run {
-        info!("Running in dry-run mode (no API calls will be made)");
-    }
+    // Define the model
+    let model = "o1";
+
+    info!("Using model: {}", &model);
 
     // Load ignore patterns from the repository's .gitignore file
     match ignore::load_ignore_patterns(std::env::current_dir().unwrap().as_path()) {
@@ -61,8 +63,20 @@ fn main() {
         }
     };
 
+    // Get the prompt for the model input
+    let prompt = prompt::get_prompt(diff);
+    // Estimate cost before proceeding
+    let cost_estimate = cost_estimation::estimate_cost(&model, &prompt);
+
+    print_cost(&cost_estimate);
+    // Check if we should run in dry-run mode
+    if args.dry_run {
+        info!("Dry-run mode");
+        return;
+    }
+
     // Generate the initial commit message suggestion
-    let mut commit_message = match api::generate_commit_message(&diff, args.dry_run) {
+    let commit_message = match api::generate_commit_message(&model, prompt) {
         Ok(msg) => msg,
         Err(e) => {
             error!("Failed to generate commit message: {}", e);
@@ -77,23 +91,11 @@ fn main() {
                 info!("User accepted the commit message.");
 
                 // Commit the changes with the accepted message
-                if let Err(e) = git::commit_changes(&commit_message) {
+                if let Err(e) = git::commit_changes(commit_message) {
                     error!("Failed to commit changes: {}", e);
                     return;
                 }
                 break;
-            }
-            UserChoice::Regenerate => {
-                info!("User chose to regenerate the commit message.");
-                match api::generate_commit_message(&diff, args.dry_run) {
-                    Ok(new_msg) => {
-                        commit_message = new_msg;
-                    }
-                    Err(e) => {
-                        error!("Failed to regenerate commit message: {}", e);
-                        return;
-                    }
-                }
             }
             UserChoice::Cancel => {
                 info!("User canceled the commit.");

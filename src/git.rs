@@ -1,6 +1,5 @@
 use git2::{DiffFormat, Repository};
 use std::path::Path;
-use std::str;
 
 pub fn get_staged_diff() -> Result<String, git2::Error> {
     // Open the current repository.
@@ -55,7 +54,7 @@ pub fn get_staged_diff() -> Result<String, git2::Error> {
 }
 
 /// Commit staged changes with the given commit message
-pub fn commit_changes(commit_message: &str) -> Result<(), git2::Error> {
+pub fn commit_changes(commit_message: String) -> Result<(), git2::Error> {
     // Open the current repository
     let repo = Repository::open(".")?;
 
@@ -77,9 +76,9 @@ pub fn commit_changes(commit_message: &str) -> Result<(), git2::Error> {
         Some("HEAD"),
         &signature,
         &signature,
-        commit_message,
+        &commit_message,
         &tree,
-        &[]  // Start with no parents
+        &[], // Start with no parents
     );
 
     // If that fails with "current tip is not the first parent", try to get the current HEAD
@@ -98,23 +97,25 @@ pub fn commit_changes(commit_message: &str) -> Result<(), git2::Error> {
                             Some("HEAD"),
                             &signature,
                             &signature,
-                            commit_message,
+                            &commit_message,
                             &tree,
-                            &[&head_commit]
+                            &[&head_commit],
                         )?;
                         return Ok(());
                     }
                 }
 
                 // If all else fails, try to commit without parents
-                eprintln!("Warning: Could not get HEAD commit, attempting to commit without parents");
+                eprintln!(
+                    "Warning: Could not get HEAD commit, attempting to commit without parents"
+                );
                 repo.commit(
                     Some("HEAD"),
                     &signature,
                     &signature,
-                    commit_message,
+                    &commit_message,
                     &tree,
-                    &[]
+                    &[],
                 )?;
                 Ok(())
             } else {
