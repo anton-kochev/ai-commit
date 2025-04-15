@@ -2,7 +2,7 @@ use clap::Parser;
 use cost_estimation::print_cost;
 use dotenv;
 use env_logger::Builder;
-use log::{error, info, trace, LevelFilter};
+use log::{error, info, trace};
 
 mod api;
 mod cli;
@@ -17,9 +17,10 @@ use cli::UserChoice;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// Run in dry-run mode (no API calls will be made)
+    /// Run the program to estimate the cost of the commit message generation,
+    /// without actually sending any requests and committing the changes.
     #[arg(long)]
-    dry_run: bool,
+    estimate_only: bool,
 }
 
 fn main() {
@@ -28,11 +29,10 @@ fn main() {
 
     // Initialize the logger with a default level
     // This will use RUST_LOG if set, otherwise fall back to info level
-    Builder::new()
-        .filter_level(LevelFilter::Info) // Default level if RUST_LOG is not set
-        .init();
+    Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     trace!("Starting ai-commit!");
+    trace!("Parsed arguments: {:?}", args);
 
     // Load environment variables from .env file
     dotenv::dotenv().ok();
@@ -41,12 +41,6 @@ fn main() {
     let model = "o1";
 
     info!("Using model: {}", &model);
-
-    // Load ignore patterns from the repository's .gitignore file
-    match ignore::load_ignore_patterns(std::env::current_dir().unwrap().as_path()) {
-        Ok(set) => trace!("Loaded {} ignore patterns", set.len()),
-        Err(e) => error!("Error loading ignore patterns: {}", e),
-    }
 
     // Retrieve the staged diff
     let diff = match git::get_staged_diff() {
@@ -69,9 +63,9 @@ fn main() {
     let cost_estimate = cost_estimation::estimate_cost(&model, &prompt);
 
     print_cost(&cost_estimate);
-    // Check if we should run in dry-run mode
-    if args.dry_run {
-        info!("Dry-run mode");
+
+    // If estimate_only is true, exit after printing the cost
+    if args.estimate_only {
         return;
     }
 

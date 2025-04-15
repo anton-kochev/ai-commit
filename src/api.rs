@@ -28,7 +28,6 @@ pub fn generate_commit_message(
     model: &str,
     prompt: String,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    // For non-dry-run mode, prompt for confirmation
     if !prompt_for_confirmation() {
         return Err("Operation canceled by user.".into());
     }
@@ -37,8 +36,10 @@ pub fn generate_commit_message(
     let api_key = std::env::var("OPENAI_API_KEY")?;
 
     // Create a client with increased timeout
+    trace!("Creating HTTP client with 120 seconds timeout");
+
     let client = Client::builder()
-        .timeout(std::time::Duration::from_secs(60)) // Increase timeout to 60 seconds
+        .timeout(std::time::Duration::from_secs(120)) // Increase timeout to 60 seconds
         .build()?;
 
     // Build the JSON request body.
@@ -48,6 +49,9 @@ pub fn generate_commit_message(
             { "role": "user", "content": prompt }
        ]
     });
+
+    trace!("Request body");
+    trace!("{}", serde_json::to_string_pretty(&request_body)?);
 
     // Send the POST request to the OpenAI Chat Completions API.
     let response = client

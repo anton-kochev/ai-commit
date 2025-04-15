@@ -1,5 +1,4 @@
 use log::{info, trace};
-use std::env;
 use tiktoken_rs::cl100k_base;
 
 // Tuple for the cost estimate

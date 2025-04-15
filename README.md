@@ -8,7 +8,7 @@ A Rust-based tool that uses OpenAI's API to generate high-quality Git commit mes
 - Interactive CLI to accept, regenerate, or cancel commit messages
 - Cost estimation and confirmation before making API calls
 - Support for ignoring files via `.ai-commit-ignore`
-- Dry-run mode for testing without making API calls
+- Yes/No selection dialog for user interactions
 
 ## Installation
 
@@ -67,15 +67,23 @@ AI_COMMIT_MODEL=gpt-4-turbo
 
 AI Commit supports the following command-line options:
 
-- `--dry-run`: Run in dry-run mode (no API calls will be made)
+- `--estimate-only`: Run to approximately estimate the token count and cost only
 - `--help`: Show help information
 
 Example:
 
 ```bash
-# Run in dry-run mode
-ai-commit --dry-run
+ai-commit --estimate-only
 ```
+
+### Estimate-only Mode
+
+When running in estimate-only mode, AI Commit will:
+
+1. Calculate the estimated token count and cost
+2. Display this information to the user
+
+This allows you to test the cost estimation without making actual API calls or committing changes.
 
 ## Ignoring Files
 

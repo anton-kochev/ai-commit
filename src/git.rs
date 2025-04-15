@@ -1,4 +1,5 @@
 use git2::{DiffFormat, Repository};
+use log::debug;
 use std::path::Path;
 
 pub fn get_staged_diff() -> Result<String, git2::Error> {
@@ -10,7 +11,10 @@ pub fn get_staged_diff() -> Result<String, git2::Error> {
 
     // Load ignore patterns from the .gitignore file.
     let ignore_set = match crate::ignore::load_ignore_patterns(repo_path) {
-        Ok(set) => set,
+        Ok(set) => {
+            debug!("Loaded ignore patterns: {}", set.len());
+            set
+        }
         Err(e) => {
             eprintln!("Warning: could not load ignore patterns: {}", e);
             // Fallback to an empty GlobSet.
