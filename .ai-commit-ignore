@@ -1,3 +1,4 @@
 .ai-commit-ignore
+.vscode/*
 .env
 *.lock
