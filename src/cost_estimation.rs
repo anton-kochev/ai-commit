@@ -15,28 +15,18 @@ pub fn estimate_cost(config: &AppConfig, prompt: &str) -> CostEstimate {
     // Calculate cost based on model
     // Prices are in dollars per 1K tokens
     let price_per_1000 = match config.get_model() {
-        // GPT-4.1 models
-        "gpt-4.1" => 0.001, // $1.00 per 1M tokens
-        // GPT-4.1 Mini models
-        "gpt-4.1-mini" => 0.0002, // $0.20 per 1M tokens
-        // GPT-4.1 Nano models
-        "gpt-4.1-nano" => 0.00005, // $0.05 per 1M tokens
-        // GPT-4.5 Preview models
+        "gpt-4.1" => 0.001,          // $1.00 per 1M tokens
+        "gpt-4.1-mini" => 0.0002,    // $0.20 per 1M tokens
+        "gpt-4.1-nano" => 0.00005,   // $0.05 per 1M tokens
         "gpt-4.5-preview" => 0.0375, // $37.50 per 1M tokens
-        // GPT-4o models
-        "gpt-4o" => 0.00125, // $1.25 per 1M tokens
-        // GPT-4o Mini models
-        "gpt-4o-mini" => 0.000075, // $0.075 per 1M tokens
-        // O1 models
-        "o1" => 0.0075, // $7.50 per 1M tokens
-        // O1 Pro models
-        "o1-pro" => 0.075, // $75.00 per 1M tokens
-        // O3
-        "o3" => 0.005, // $5 per 1M tokens
-        // O3 Mini models
-        "o3-mini" => 0.00055, // $0.55 per 1M tokens
-        // O1 Mini models
-        "o1-mini" => 0.00055, // $0.55 per 1M tokens
+        "gpt-4o" => 0.00125,         // $1.25 per 1M tokens
+        "gpt-4o-mini" => 0.000075,   // $0.075 per 1M tokens
+        "o1" => 0.0075,              // $7.50 per 1M tokens
+        "o1-mini" => 0.00055,        // $0.55 per 1M tokens
+        "o1-pro" => 0.075,           // $75.00 per 1M tokens
+        "o3" => 0.005,               // $5 per 1M tokens
+        "o3-mini" => 0.00055,        // $0.55 per 1M tokens
+        "o4-mini" => 0.0011,         // $1.10 per 1M tokens
         // Computer Use Preview models
         "computer-use-preview" => 0.0015, // $1.50 per 1M tokens
         // Legacy models (keeping for backward compatibility)

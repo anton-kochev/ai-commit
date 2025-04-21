@@ -15,6 +15,7 @@ enum Model {
     O1Mini,
     O1Pro,
     O3Mini,
+    O4Mini,
 }
 
 impl Model {
@@ -33,6 +34,7 @@ impl Model {
             "o1-pro" => Ok(Model::O1Pro),
             "o3" => Ok(Model::O3),
             "o3-mini" => Ok(Model::O3Mini),
+            "o4-mini" => Ok(Model::O4Mini),
             _ => Err(format!("Unsupported model: {}", s)),
         }
     }
