@@ -1,18 +1,20 @@
-use log::{info, trace};
+use log::{info, warn};
 use tiktoken_rs::cl100k_base;
+
+use crate::config_manager::AppConfig;
 
 // Tuple for the cost estimate
 pub type CostEstimate = (usize, f64);
 
 /// Estimates the cost of an API request based on the input token count
-pub fn estimate_cost(model: &str, prompt: &str) -> CostEstimate {
+pub fn estimate_cost(config: &AppConfig, prompt: &str) -> CostEstimate {
     // Count tokens using the appropriate tokenizer
     let tokenizer = cl100k_base().unwrap();
     let token_count = tokenizer.encode_with_special_tokens(prompt).len();
 
     // Calculate cost based on model
     // Prices are in dollars per 1K tokens
-    let price_per_1000 = match model {
+    let price_per_1000 = match config.get_model() {
         // GPT-4.1 models
         "gpt-4.1" => 0.001, // $1.00 per 1M tokens
         // GPT-4.1 Mini models
@@ -29,6 +31,8 @@ pub fn estimate_cost(model: &str, prompt: &str) -> CostEstimate {
         "o1" => 0.0075, // $7.50 per 1M tokens
         // O1 Pro models
         "o1-pro" => 0.075, // $75.00 per 1M tokens
+        // O3
+        "o3" => 0.005, // $5 per 1M tokens
         // O3 Mini models
         "o3-mini" => 0.00055, // $0.55 per 1M tokens
         // O1 Mini models
@@ -41,7 +45,7 @@ pub fn estimate_cost(model: &str, prompt: &str) -> CostEstimate {
 
         // Default fallback for unknown models
         _ => {
-            trace!("Unknown model '{}', using default pricing", model);
+            warn!("Unknown model, using default pricing.");
             0.001 // Default to $1.00 per 1M tokens = $0.001 per 1K tokens
         }
     };

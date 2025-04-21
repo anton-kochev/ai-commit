@@ -5,6 +5,8 @@ use serde::Deserialize;
 use serde_json::json;
 use std::env;
 
+use crate::config_manager::AppConfig;
+
 /// Structs for deserializing the OpenAI Chat Completions response.
 #[derive(Deserialize)]
 pub struct ChatResponse {
@@ -25,15 +27,12 @@ pub struct ChatMessageResponse {
 /// If dry_run is true, it will trace the request instead of making an actual API call.
 /// Returns the commit message as a string.
 pub fn generate_commit_message(
-    model: &str,
+    config: &AppConfig,
     prompt: String,
 ) -> Result<String, Box<dyn std::error::Error>> {
     if !prompt_for_confirmation() {
         return Err("Operation canceled by user.".into());
     }
-
-    // Get API key from environment
-    let api_key = std::env::var("OPENAI_API_KEY")?;
 
     // Create a client with increased timeout
     trace!("Creating HTTP client with 120 seconds timeout");
@@ -44,7 +43,7 @@ pub fn generate_commit_message(
 
     // Build the JSON request body.
     let request_body = json!({
-       "model": model,
+       "model": config.get_model(),
        "messages": [
             { "role": "user", "content": prompt }
        ]
@@ -56,7 +55,7 @@ pub fn generate_commit_message(
     // Send the POST request to the OpenAI Chat Completions API.
     let response = client
         .post("https://api.openai.com/v1/chat/completions")
-        .bearer_auth(api_key)
+        .bearer_auth(config.get_api_key())
         .header(CONTENT_TYPE, "application/json")
         .json(&request_body)
         .send()?;

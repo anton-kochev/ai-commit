@@ -1,46 +1,40 @@
 use clap::Parser;
 use cost_estimation::print_cost;
-use dotenv;
 use env_logger::Builder;
 use log::{error, info, trace};
 
 mod api;
 mod cli;
+mod cli_config;
+mod config_manager;
 mod cost_estimation;
 mod git;
 mod ignore;
 mod prompt;
 
 use cli::UserChoice;
-
-/// Command-line arguments for ai-commit
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    /// Run the program to estimate the cost of the commit message generation,
-    /// without actually sending any requests and committing the changes.
-    #[arg(long)]
-    estimate_only: bool,
-}
+use cli_config::CliConfig;
 
 fn main() {
-    // Parse command-line arguments
-    let args = Args::parse();
+    // Parse the command-line arguments
+    let cli_config = CliConfig::parse();
 
     // Initialize the logger with a default level
-    // This will use RUST_LOG if set, otherwise fall back to info level
+    // This will use RUST_LOG if set, otherwise fall back to 'info' level
     Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     trace!("Starting ai-commit!");
-    trace!("Parsed arguments: {:?}", args);
+    trace!("Parsed cli args: {:?}", cli_config);
 
-    // Load environment variables from .env file
-    dotenv::dotenv().ok();
+    // Load existing configuration or use defaults
+    let config = match config_manager::load_config(cli_config) {
+        Ok(config) => config,
+        Err(..) => {
+            return;
+        }
+    };
 
-    // Define the model
-    let model = "o1";
-
-    info!("Using model: {}", &model);
+    info!("Using model: {}", config.get_model());
 
     // Retrieve the staged diff
     let diff = match git::get_staged_diff() {
@@ -60,17 +54,12 @@ fn main() {
     // Get the prompt for the model input
     let prompt = prompt::get_prompt(diff);
     // Estimate cost before proceeding
-    let cost_estimate = cost_estimation::estimate_cost(&model, &prompt);
+    let cost_estimate = cost_estimation::estimate_cost(&config, &prompt);
 
     print_cost(&cost_estimate);
 
-    // If estimate_only is true, exit after printing the cost
-    if args.estimate_only {
-        return;
-    }
-
     // Generate the initial commit message suggestion
-    let commit_message = match api::generate_commit_message(&model, prompt) {
+    let commit_message = match api::generate_commit_message(&config, prompt) {
         Ok(msg) => msg,
         Err(e) => {
             error!("Failed to generate commit message: {}", e);
