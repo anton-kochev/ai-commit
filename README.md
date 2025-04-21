@@ -49,31 +49,46 @@ The binary will be available at `target/release/ai-commit`.
 
 ## Configuration
 
-AI Commit can be configured using environment variables:
+AI Commit primarily uses command-line arguments for configuration. However, it also caches certain settings like the model choice and API keys in a configuration file for future use.
 
-- `OPENAI_API_KEY`: Your OpenAI API key (required)
-- `AI_COMMIT_MODEL`: The OpenAI model to use (default: "gpt-3.5-turbo-16k")
-- `AI_COMMIT_SKIP_COST_CONFIRM`: Set to any value to skip cost confirmation
-- `RUST_LOG`: Set the log level (default: "info")
+- **Model**: Specify the model using the `-m` or `--model` flag. This choice is cached.
+- **API Key**: Provide your API key using the `-k` or `--api-key` flag in the format `<provider>=<key>`. This is also cached.
 
-You can set these in a `.env` file in your project root:
+Supported Providers:
 
-``` plaintext
-OPENAI_API_KEY=your-api-key-here
-AI_COMMIT_MODEL=gpt-4-turbo
-```
+- `openai`
+- `anthropic`
+
+Supported Models:
+
+- `gpt-3.5-turbo`
+- `gpt-4`
+- `gpt-4.1`
+- `gpt-4.1-mini`
+- `gpt-4.1-nano`
+- `gpt-4.5-preview`
+- `gpt-4o`
+- `gpt-4o-mini`
+- `o1`
+- `o1-mini`
+- `o1-pro`
+- `o3`
+- `o3-mini`
+- `o4-mini`
 
 ## Command-line Options
 
 AI Commit supports the following command-line options:
 
+- `-m <model>`, `--model <model>`: Specify the model to use (e.g., `gpt-4o`). This value is cached.
+- `-k <provider>=<key>`, `--api-key <provider>=<key>`: Specify the API key provider and key (e.g., `openai=sk-yourkey`). This value is cached.
 - `--estimate-only`: Run to approximately estimate the token count and cost only
 - `--help`: Show help information
 
 Example:
 
 ```bash
-ai-commit --estimate-only
+ai-commit -m gpt-4o -k openai=sk-yourkey
 ```
 
 ### Estimate-only Mode
