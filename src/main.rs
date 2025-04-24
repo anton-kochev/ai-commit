@@ -1,3 +1,4 @@
+use api::provider::Provider;
 use clap::Parser;
 use cost_estimation::print_cost;
 use env_logger::Builder;
@@ -58,8 +59,16 @@ fn main() {
 
     print_cost(&cost_estimate);
 
+    let (provider, key) = config.get_provider_key();
+    let api = Provider::create_provider(provider, key).expect("Failed to create provider");
+
     // Generate the initial commit message suggestion
-    let commit_message = match api::generate_commit_message(&config, prompt) {
+    if !prompt_for_confirmation() {
+        info!("User canceled the operation.");
+        return;
+    }
+
+    let commit_message = match api.generate_commit_message(config.get_model(), &prompt) {
         Ok(msg) => msg,
         Err(e) => {
             error!("Failed to generate commit message: {}", e);
@@ -88,4 +97,12 @@ fn main() {
     }
 
     info!("Successfully committed changes");
+}
+
+fn prompt_for_confirmation() -> bool {
+    dialoguer::Confirm::with_theme(&dialoguer::theme::ColorfulTheme::default())
+        .with_prompt("Do you want to proceed?")
+        .default(false)
+        .interact()
+        .unwrap_or(false)
 }

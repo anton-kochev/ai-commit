@@ -59,30 +59,12 @@ Supported Providers:
 - `openai`
 - `anthropic`
 
-Supported Models:
-
-- `gpt-3.5-turbo`
-- `gpt-4`
-- `gpt-4.1`
-- `gpt-4.1-mini`
-- `gpt-4.1-nano`
-- `gpt-4.5-preview`
-- `gpt-4o`
-- `gpt-4o-mini`
-- `o1`
-- `o1-mini`
-- `o1-pro`
-- `o3`
-- `o3-mini`
-- `o4-mini`
-
 ## Command-line Options
 
 AI Commit supports the following command-line options:
 
 - `-m <model>`, `--model <model>`: Specify the model to use (e.g., `gpt-4o`). This value is cached.
 - `-k <provider>=<key>`, `--api-key <provider>=<key>`: Specify the API key provider and key (e.g., `openai=sk-yourkey`). This value is cached.
-- `--estimate-only`: Run to approximately estimate the token count and cost only
 - `--help`: Show help information
 
 Example:
@@ -90,15 +72,6 @@ Example:
 ```bash
 ai-commit -m gpt-4o -k openai=sk-yourkey
 ```
-
-### Estimate-only Mode
-
-When running in estimate-only mode, AI Commit will:
-
-1. Calculate the estimated token count and cost
-2. Display this information to the user
-
-This allows you to test the cost estimation without making actual API calls or committing changes.
 
 ## Ignoring Files
 

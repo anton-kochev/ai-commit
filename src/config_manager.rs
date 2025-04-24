@@ -34,14 +34,11 @@ impl AppConfig {
         self.model.as_deref().expect("Model field is missing")
     }
 
-    pub fn get_api_key(&self) -> &str {
-        self.api_key.as_deref().expect("ApiKey field is missing")
-    }
-
-    pub fn get_api_provider(&self) -> &str {
-        self.api_provider
+    pub fn get_provider_key(&self) -> (&str, &str) {
+        self.api_key
             .as_deref()
-            .expect("ApiProvider field is missing")
+            .and_then(|key| self.api_provider.as_deref().map(|provider| (provider, key)))
+            .expect("API key or provider field is missing")
     }
 }
 
