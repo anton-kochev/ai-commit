@@ -3,6 +3,8 @@ use reqwest::{blocking::Client, header::CONTENT_TYPE};
 use serde::Deserialize;
 use serde_json::json;
 
+use crate::prompt;
+
 /// Structs for deserializing the OpenAI Chat Completions response.
 #[derive(Deserialize)]
 pub struct ChatResponse {
@@ -42,7 +44,7 @@ impl OpenAiApi {
     pub fn generate_commit_message(
         self,
         model: &str,
-        prompt: &str,
+        diff: &str,
     ) -> Result<String, Box<dyn std::error::Error>> {
         // Create a client with increased timeout
         trace!("Creating HTTP client with 120 seconds timeout");
@@ -51,8 +53,15 @@ impl OpenAiApi {
         let request_body = json!({
            "model": model,
            "messages": [
-                { "role": "user", "content": prompt }
-           ]
+            {
+                "role": "developer",
+                "content": prompt::get_instructions()
+            },
+            {
+                "role": "user",
+                "content": diff
+            }
+        ],
         });
 
         trace!("Request body");

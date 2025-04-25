@@ -1,20 +1,18 @@
-use log::{info, warn};
+use log::warn;
 use tiktoken_rs::cl100k_base;
-
-use crate::config_manager::AppConfig;
 
 // Tuple for the cost estimate
 pub type CostEstimate = (usize, f64);
 
 /// Estimates the cost of an API request based on the input token count
-pub fn estimate_cost(config: &AppConfig, prompt: &str) -> CostEstimate {
+pub fn estimate_cost(model: &str, prompt: &str) -> CostEstimate {
     // Count tokens using the appropriate tokenizer
     let tokenizer = cl100k_base().unwrap();
     let token_count = tokenizer.encode_with_special_tokens(prompt).len();
 
     // Calculate cost based on model
     // Prices are in dollars per 1K tokens
-    let price_per_1000 = match config.get_model() {
+    let price_per_1000 = match model {
         "gpt-4.1" => 0.001,          // $1.00 per 1M tokens
         "gpt-4.1-mini" => 0.0002,    // $0.20 per 1M tokens
         "gpt-4.1-nano" => 0.00005,   // $0.05 per 1M tokens
@@ -45,10 +43,11 @@ pub fn estimate_cost(config: &AppConfig, prompt: &str) -> CostEstimate {
     (token_count, estimated_cost)
 }
 
-pub fn print_cost(cost_estimate: &CostEstimate) {
+pub fn format_cost_estimate(cost_estimate: &CostEstimate) -> String {
     let (token_count, estimated_cost) = cost_estimate;
-    info!(
+
+    format!(
         "Estimated cost: ${:.3} for processing {} tokens.",
         estimated_cost, token_count
-    );
+    )
 }

@@ -1,6 +1,5 @@
 use api::provider::Provider;
 use clap::Parser;
-use cost_estimation::print_cost;
 use env_logger::Builder;
 use log::{error, info, trace};
 
@@ -53,22 +52,22 @@ fn main() {
     };
 
     // Get the prompt for the model input
-    let prompt = prompt::get_prompt(diff);
+    let prompt = format!("{}\n\nDiff:\n{}", prompt::get_instructions(), &diff);
     // Estimate cost before proceeding
-    let cost_estimate = cost_estimation::estimate_cost(&config, &prompt);
+    let cost = cost_estimation::estimate_cost(config.get_model(), &prompt);
 
-    print_cost(&cost_estimate);
-
-    let (provider, key) = config.get_provider_key();
-    let api = Provider::create_provider(provider, key).expect("Failed to create provider");
+    info!("{}", cost_estimation::format_cost_estimate(&cost));
 
     // Generate the initial commit message suggestion
-    if !prompt_for_confirmation() {
+    if !cli::prompt_for_confirmation("Do you want to proceed?") {
         info!("User canceled the operation.");
         return;
     }
 
-    let commit_message = match api.generate_commit_message(config.get_model(), &prompt) {
+    let (provider, key) = config.get_provider_key();
+    let api = Provider::create_provider(provider, key).expect("Failed to create provider");
+
+    let commit_message = match api.generate_commit_message(config.get_model(), &diff) {
         Ok(msg) => msg,
         Err(e) => {
             error!("Failed to generate commit message: {}", e);
@@ -97,12 +96,4 @@ fn main() {
     }
 
     info!("Successfully committed changes");
-}
-
-fn prompt_for_confirmation() -> bool {
-    dialoguer::Confirm::with_theme(&dialoguer::theme::ColorfulTheme::default())
-        .with_prompt("Do you want to proceed?")
-        .default(false)
-        .interact()
-        .unwrap_or(false)
 }

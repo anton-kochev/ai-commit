@@ -7,11 +7,6 @@ use std::path::PathBuf;
 
 use crate::cli_config::CliConfig;
 
-const QUALIFIER: &str = "dev";
-const ORGANIZATION: &str = "anton-kochev";
-const APPLICATION: &str = "ai-commit";
-const CONFIG_FILE_NAME: &str = "config.json";
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AppConfig {
     pub api_key: Option<String>,
@@ -43,8 +38,8 @@ impl AppConfig {
 }
 
 fn get_config_path() -> Option<PathBuf> {
-    ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION)
-        .map(|proj_dirs| proj_dirs.config_dir().join(CONFIG_FILE_NAME))
+    ProjectDirs::from("dev", "anton-kochev", "ai-commit")
+        .map(|proj_dirs| proj_dirs.config_dir().join("config.json"))
 }
 
 pub fn load_config(cli_config: CliConfig) -> Result<AppConfig, &'static str> {
