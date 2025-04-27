@@ -1,5 +1,10 @@
 use super::openai::OpenAiApi;
 
+pub struct CommitMessage {
+    pub summary: String,
+    pub description: Option<String>,
+}
+
 pub enum Provider {
     OpenAI(OpenAiApi),
     // Anthropic(),
@@ -27,7 +32,7 @@ impl Provider {
         self,
         model: &str,
         prompt: &str,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<CommitMessage, Box<dyn std::error::Error>> {
         match self {
             Provider::OpenAI(api) => api.generate_commit_message(model, prompt),
         }

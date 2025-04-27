@@ -68,7 +68,14 @@ fn main() {
     let api = Provider::create_provider(provider, key).expect("Failed to create provider");
 
     let commit_message = match api.generate_commit_message(config.get_model(), &diff) {
-        Ok(msg) => msg,
+        Ok(msg) => format!(
+            "{}{}",
+            msg.summary,
+            match msg.description {
+                Some(desc) => format!("\n\n{}", desc),
+                None => "".to_string(),
+            }
+        ),
         Err(e) => {
             error!("Failed to generate commit message: {}", e);
             return;
@@ -77,7 +84,9 @@ fn main() {
 
     // Enter an interactive loop for user decision
     loop {
-        match cli::prompt_user_for_action(&commit_message) {
+        println!("{}", &commit_message);
+
+        match cli::prompt_user_for_action() {
             UserChoice::Commit => {
                 info!("User accepted the commit message.");
 

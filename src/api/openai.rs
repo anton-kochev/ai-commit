@@ -3,24 +3,38 @@ use reqwest::{blocking::Client, header::CONTENT_TYPE};
 use serde::Deserialize;
 use serde_json::json;
 
+use super::provider::CommitMessage;
 use crate::prompt;
 
 /// Structs for deserializing the OpenAI Chat Completions response.
+/// These structs are used to parse the JSON response from the OpenAI API.
 #[derive(Deserialize)]
-pub struct ChatResponse {
-    pub choices: Vec<ChatChoice>,
+struct ChatResponse {
+    choices: Vec<ChatChoice>,
 }
 
 #[derive(Deserialize)]
-pub struct ChatChoice {
-    pub message: ChatMessageResponse,
+struct ChatChoice {
+    message: ChatMessage,
 }
 
 #[derive(Deserialize)]
-pub struct ChatMessageResponse {
-    pub content: String,
+struct ChatMessage {
+    function_call: ChatFunctionCall,
 }
 
+#[derive(Deserialize)]
+struct ChatFunctionCall {
+    arguments: String,
+}
+
+#[derive(Deserialize)]
+struct ChatFunctionCallResult {
+    summary: String,
+    description: Option<String>,
+}
+
+/// Struct for the OpenAI API client.
 pub struct OpenAiApi {
     api_key: String,
     api_url: String,
@@ -40,13 +54,11 @@ impl OpenAiApi {
     }
 
     /// Generates a commit message by sending the provided diff to the OpenAI ChatGPT API.
-    /// Returns the commit message as a string.
     pub fn generate_commit_message(
         self,
         model: &str,
         diff: &str,
-    ) -> Result<String, Box<dyn std::error::Error>> {
-        // Create a client with increased timeout
+    ) -> Result<CommitMessage, Box<dyn std::error::Error>> {
         trace!("Creating HTTP client with 120 seconds timeout");
 
         // Build the JSON request body.
@@ -60,8 +72,23 @@ impl OpenAiApi {
             {
                 "role": "user",
                 "content": diff
-            }
-        ],
+            }],
+            "functions": [
+                {
+                    "name": "git_commit_message",
+                    "description": "Generate a commit message from a diff",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "summary": { "type": "string" },
+                            "description": { "type": "string" }
+                        },
+                        "required": ["summary"],
+                        "additionalProperties": false
+                    }
+                }
+            ],
+            "function_call": { "name": "git_commit_message" }
         });
 
         trace!("Request body");
@@ -83,13 +110,22 @@ impl OpenAiApi {
 
         // Deserialize the JSON response.
         let json_response: ChatResponse = response.json()?;
-        let content = json_response
+
+        // Extract the commit message content from the response.
+        let function_call_result = &json_response
             .choices
             .get(0)
-            .map(|choice| choice.message.content.clone())
-            .ok_or("No response from API")?;
+            .ok_or("No choices returned from API")?
+            .message
+            .function_call
+            .arguments;
 
-        // Return the trimmed content
-        Ok(content.trim().to_string())
+        let commit_message = serde_json::from_str::<ChatFunctionCallResult>(&function_call_result)?;
+
+        // Return the CommitMessage
+        Ok(CommitMessage {
+            summary: commit_message.summary,
+            description: commit_message.description,
+        })
     }
 }

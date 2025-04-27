@@ -5,11 +5,7 @@ pub enum UserChoice {
 }
 
 /// Prompt the user with the suggested commit message and give options for action.
-pub fn prompt_user_for_action(commit_msg: &str) -> UserChoice {
-    // Display the suggested commit message as a single string
-    println!("{}", commit_msg.trim());
-    println!();
-
+pub fn prompt_user_for_action() -> UserChoice {
     let options = &["Commit", "Cancel"];
 
     // Use dialoguer to create a selection prompt
