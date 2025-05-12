@@ -7,21 +7,11 @@ use std::path::PathBuf;
 
 use crate::cli_config::CliConfig;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct AppConfig {
     pub api_key: Option<String>,
     pub api_provider: Option<String>,
     pub model: Option<String>,
-}
-
-impl Default for AppConfig {
-    fn default() -> Self {
-        AppConfig {
-            api_key: None,
-            api_provider: None,
-            model: None,
-        }
-    }
 }
 
 impl AppConfig {

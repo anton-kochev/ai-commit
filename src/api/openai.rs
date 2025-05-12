@@ -114,13 +114,13 @@ impl OpenAiApi {
         // Extract the commit message content from the response.
         let function_call_result = &json_response
             .choices
-            .get(0)
+            .first()
             .ok_or("No choices returned from API")?
             .message
             .function_call
             .arguments;
 
-        let commit_message = serde_json::from_str::<ChatFunctionCallResult>(&function_call_result)?;
+        let commit_message = serde_json::from_str::<ChatFunctionCallResult>(function_call_result)?;
 
         // Return the CommitMessage
         Ok(CommitMessage {

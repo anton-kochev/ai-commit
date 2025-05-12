@@ -82,25 +82,21 @@ fn main() {
         }
     };
 
-    // Enter an interactive loop for user decision
-    loop {
-        println!("{}", &commit_message);
+    println!("{}", &commit_message);
 
-        match cli::prompt_user_for_action() {
-            UserChoice::Commit => {
-                info!("User accepted the commit message.");
+    match cli::prompt_user_for_action() {
+        UserChoice::Commit => {
+            info!("User accepted the commit message.");
 
-                // Commit the changes with the accepted message
-                if let Err(e) = git::commit_changes(commit_message) {
-                    error!("Failed to commit changes: {}", e);
-                    return;
-                }
-                break;
-            }
-            UserChoice::Cancel => {
-                info!("User canceled the commit.");
+            // Commit the changes with the accepted message
+            if let Err(e) = git::commit_changes(commit_message) {
+                error!("Failed to commit changes: {}", e);
                 return;
             }
+        }
+        UserChoice::Cancel => {
+            info!("User canceled the commit.");
+            return;
         }
     }
 
