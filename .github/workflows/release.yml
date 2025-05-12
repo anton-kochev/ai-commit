@@ -9,11 +9,56 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Build
-        run: cargo build --verbose
+      - name: Check formatting
+        run: cargo fmt -- --check
+      - name: Lint with Clippy
+        run: cargo clippy -- -D warnings
       - name: Run tests
         run: cargo test --verbose
+      - name: Build
+        run: cargo build --verbose --release
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-commit-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/ai-commit
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: ai-commit-*
+          path: dist
+
+      - name: Extract version
+        id: version
+        run: |
+          version=$(grep '^version' Cargo.toml | head -1 | sed -E 's/version *= *"(.*)"/\1/')
+          echo "version=${version}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
