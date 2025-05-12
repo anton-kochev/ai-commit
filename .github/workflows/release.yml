@@ -22,11 +22,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
+      - name: Install Rust targets
+        run: |
+          rustup target add x86_64-apple-darwin
+          rustup target add aarch64-apple-darwin
+      - name: Cache cargo registry
+        uses: actions/cache@v4
         with:
-          toolchain: stable
-          override: true
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      # - name: Install Rust targets
+      #   run: |
+      #     rustup target add x86_64-apple-darwin
+      #     rustup target add aarch64-apple-darwin
       - name: Check formatting
         run: cargo fmt -- --check
       - name: Lint with Clippy
