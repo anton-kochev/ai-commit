@@ -12,64 +12,92 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      # 1. Download the ai‑commit binary asset attached by release.yml
+      # 1. Fetch the ai‑commit binary attached by release.yml
       - name: Download release asset
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ASSET_URL=$(gh api repos/${{ github.repository }}/releases/${{ github.event.release.id }} \
                        --jq '.assets[] | select(.name=="ai-commit") | .url')
+          if [ -z "$ASSET_URL" ]; then
+            echo "::error::Could not find 'ai-commit' asset on release." && exit 1
+          fi
           gh api -H "Accept: application/octet-stream" "$ASSET_URL" > ai-commit
           chmod +x ai-commit
           tar -czf ai-commit-macos-universal.tar.gz ai-commit
 
-      # 2. Compute SHA‑256 of bottled tarball
+      # 2. Calculate SHA‑256
       - name: Compute SHA256
         id: sha
         run: echo "sha=$(shasum -a 256 ai-commit-macos-universal.tar.gz | awk '{print $1}')" >> $GITHUB_OUTPUT
 
-      # 3. Upload bottled tarball back to the release (optional)
+      # 3. Upload the bottle tarball (overwrites if it already exists)
       - name: Upload bottled tarball
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ai-commit-macos-universal.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ai-commit-macos-universal.tar.gz
-          asset_name: ai-commit-macos-universal.tar.gz
-          asset_content_type: application/gzip
 
-      # 4. Clone the Homebrew tap repo
+      # 4. Check out the Homebrew tap repo
       - name: Checkout tap
         uses: actions/checkout@v3
         with:
-          repository: anton-kochev/homebrew-ai-commit  # <= replace
+          repository: anton-kochev/homebrew-ai-commit   # <- your tap repo
           token: ${{ secrets.HOMEBREW_TAP_PAT }}
           path: tap
 
-      # 5. Update formula and push only if it changed
+      # 5. Update the formula with new URL, SHA and version
       - name: Update formula
         working-directory: tap
         run: |
+          set -e
           FORMULA="Formula/ai-commit.rb"
           TAG="${{ github.event.release.tag_name }}"
           URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/ai-commit-macos-universal.tar.gz"
           SHA="${{ steps.sha.outputs.sha }}"
+          VERSION="${TAG#v}"
 
-          # Replace url and sha256 irrespective of leading spaces
-          sed -i '' -E "s|^\s*url\s+\".*\"|  url \"${URL}\"|" "$FORMULA"
-          sed -i '' -E "s|^\s*sha256\s+\"[a-f0-9]+\"|  sha256 \"${SHA}\"|" "$FORMULA"
-          # bump version if present
-          if grep -qE "^\s*version\s+\".*\"" "$FORMULA"; then
-            sed -i '' -E "s|^\s*version\s+\".*\"|  version \"${TAG#v}\"|" "$FORMULA"
+          # Ensure formula exists; create skeleton if missing
+          if [ ! -f "$FORMULA" ]; then
+            mkdir -p Formula
+            cat > "$FORMULA" <<EOF
+class AiCommit < Formula
+  desc "AI‑assisted commit message generator"
+  homepage "https://github.com/${{ github.repository }}"
+  license "MIT"
+
+  url "${URL}"
+  sha256 "${SHA}"
+  version "${VERSION}"
+
+  def install
+    bin.install "ai-commit"
+  end
+
+  test do
+    system "#{bin}/ai-commit", "--help"
+  end
+end
+EOF
+          else
+            # BSD sed does not recognise \s – use [[:space:]]
+            sed -i '' -E "s|^[[:space:]]*url[[:space:]]+\".*\"|  url \"${URL}\"|" "$FORMULA"
+            sed -i '' -E "s|^[[:space:]]*sha256[[:space:]]+\"[A-Za-z0-9]+\"|  sha256 \"${SHA}\"|" "$FORMULA"
+            if grep -qE "^[[:space:]]*version[[:space:]]+\".*\"" "$FORMULA"; then
+              sed -i '' -E "s|^[[:space:]]*version[[:space:]]+\".*\"|  version \"${VERSION}\"|" "$FORMULA"
+            else
+              sed -i '' -E "2a\\
+  version \"${VERSION}\"" "$FORMULA"
+            fi
           fi
 
           if git diff --quiet; then
-            echo "Formula already up to date—nothing to commit."
+            echo "Formula already up to date — nothing to commit."
           else
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add "$FORMULA"
-            git commit -m "ai-commit ${TAG} (automated)"
+            git commit -m "ai-commit ${VERSION} (automated)"
             git push
           fi
