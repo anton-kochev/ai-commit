@@ -1,0 +1,75 @@
+name: Publish Homebrew Bottle
+
+# Runs whenever a GitHub Release is published
+on:
+  release:
+    types: [published]
+
+# The tap‑update job needs write access to the tap repo
+permissions:
+  contents: write
+
+jobs:
+  publish-homebrew:
+    name: Build & push Homebrew bottle metadata
+    runs-on: macos-latest # must be macOS so we can run `brew`
+
+    steps:
+      # 1. Download the universal binary we uploaded in release.yml
+      - name: Download release asset (ai-commit)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ASSET_URL=$(gh api repos/${{ github.repository }}/releases/${{ github.event.release.id }} | \
+                       jq -r '.assets[] | select(.name == "ai-commit") | .url')
+          gh api -H "Accept: application/octet-stream" "$ASSET_URL" > ai-commit
+          chmod +x ai-commit
+          # Package it the Homebrew way (a simple tarball is enough for a custom tap)
+          tar -czf ai-commit-macos-universal.tar.gz ai-commit
+
+      # 2. Compute SHA‑256 for the tarball so we can drop it into the formula
+      - name: Compute SHA256
+        id: sha
+        run: echo "sha=$(shasum -a 256 ai-commit-macos-universal.tar.gz | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+      # 3. Upload the tarball back to the same release (optional but nice to have)
+      - name: Upload bottled tarball to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ai-commit-macos-universal.tar.gz
+          asset_name: ai-commit-macos-universal.tar.gz
+          asset_content_type: application/gzip
+
+      # 4. Clone your tap repository using a PAT (needs write access)
+      - name: Checkout tap
+        uses: actions/checkout@v3
+        with:
+          repository: github.com/anton-kochev/homebrew-ai-commit
+          token: ${{ secrets.HOMEBREW_TAP_PAT }}
+          path: tap
+
+      # 5. Update the formula file in‑place with the new URL & SHA
+      - name: Update formula
+        working-directory: tap
+        run: |
+          FORMULA="Formula/ai-commit.rb"
+          TAG="${{ github.event.release.tag_name }}"
+          URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/ai-commit-macos-universal.tar.gz"
+          SHA="${{ steps.sha.outputs.sha }}"
+
+          # Substitute the url and sha256 lines (assumes they already exist once)
+          sed -i '' "s|^  url \".*\"|  url \"${URL}\"|" "$FORMULA"
+          sed -i '' "s|^  sha256 \".*\"|  sha256 \"${SHA}\"|" "$FORMULA"
+
+          # Optionally bump version if it's explicitly declared
+          if grep -q "^  version \".*\"" "$FORMULA"; then
+            sed -i '' "s|^  version \".*\"|  version \"${TAG#v}\"|" "$FORMULA"
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "ai-commit ${TAG} (automated)"
+          git push
