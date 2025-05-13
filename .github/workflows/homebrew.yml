@@ -47,7 +47,7 @@ jobs:
       - name: Checkout tap
         uses: actions/checkout@v3
         with:
-          repository: github.com/anton-kochev/homebrew-ai-commit
+          repository: anton-kochev/homebrew-ai-commit
           token: ${{ secrets.HOMEBREW_TAP_PAT }}
           path: tap
 
