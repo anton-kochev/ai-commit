@@ -1,4 +1,4 @@
-name: Builf and Release
+name: Build and Release
 on:
   push:
     branches:
@@ -9,71 +9,58 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: macos-latest
-            target: x86_64-apple-darwin
-          - os: macos-latest
-            target: aarch64-apple-darwin
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install Rust targets
-        run: |
-          rustup target add x86_64-apple-darwin
-          rustup target add aarch64-apple-darwin
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      # - name: Install Rust targets
-      #   run: |
-      #     rustup target add x86_64-apple-darwin
-      #     rustup target add aarch64-apple-darwin
-      - name: Check formatting
-        run: cargo fmt -- --check
-      - name: Lint with Clippy
-        run: cargo clippy -- -D warnings
-      - name: Run tests
-        run: cargo test --verbose
-      - name: Build release binary
-        run: cargo build --release --target ${{ matrix.target }}
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ai-commit-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/ai-commit
-  release:
-    needs: build
+    name: Build and Release
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
+      # Checkout the repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v3
+      # Set up Rust toolchain
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
         with:
-          name: ai-commit-*
-          path: dist
+          toolchain: stable
 
-      - name: Extract version
-        id: version
+      # Cache Cargo dependencies
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # Build the application
+      - name: Build
+        run: cargo build --release
+
+      # Archive the binary
+      - name: Archive binary
         run: |
-          version=$(grep '^version' Cargo.toml | head -1 | sed -E 's/version *= *"(.*)"/\1/')
-          echo "version=${version}" >> $GITHUB_OUTPUT
+          mkdir -p dist
+          cp target/release/ai-commit dist/
+        # Replace <your-binary-name> with the name of your Rust binary
 
+      # Create a release and upload the binary
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: Release v${{ steps.version.outputs.version }}
-          files: dist/*
+        id: create_release
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/ai-commit
+          asset_name: ai-commit
+          asset_content_type: application/octet-stream
