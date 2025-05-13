@@ -1,16 +1,17 @@
 name: Build and Release
+
+# Trigger only when a version tag like v1.2.3 is pushed
 on:
   push:
     tags:
       - 'v*.*.*'
-
 
 permissions:
   contents: write
 
 jobs:
   build:
-    name: Build and release
+    name: Build and Release
     runs-on: ubuntu-latest
 
     steps:
@@ -42,27 +43,25 @@ jobs:
         run: |
           mkdir -p dist
           cp target/release/ai-commit dist/
-        # Replace <your-binary-name> with the name of your Rust binary
 
-      # Create a release and upload the binary
+      # Create or update the GitHub Release for this tag
       - name: Create GitHub Release
         id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_RELEASE_PAT }}
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           draft: false
           prerelease: false
-
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+          generate_release_notes: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_RELEASE_PAT || secrets.GITHUB_TOKEN }}
 
+      # Upload the Rust binary as a release asset
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        if: ${{ steps.create_release.outputs.upload_url }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/ai-commit
-          asset_name: ai-commit
-          asset_content_type: application/octet-stream
+          files: dist/ai-commit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_RELEASE_PAT || secrets.GITHUB_TOKEN }}
