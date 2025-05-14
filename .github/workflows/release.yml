@@ -11,8 +11,20 @@ permissions:
 
 jobs:
   build:
-    name: Build and Release
-    runs-on: ubuntu-latest
+    name: Build for ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            name: linux-x86_64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            name: darwin-x86_64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            name: darwin-arm64
 
     steps:
       # Checkout the repository
@@ -29,22 +41,54 @@ jobs:
       - name: Cache Cargo
         uses: actions/cache@v3
         with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-
+            ${{ runner.os }}-${{ matrix.target }}-cargo-
 
-      # Build the application
-      - name: Build
-        run: cargo build --release
+      # Special handling for cross-compilation to ARM macOS
+      - name: Build for ARM macOS
+        if: matrix.target == 'aarch64-apple-darwin'
+        run: |
+          rustup target add aarch64-apple-darwin
+          cargo build --release --target aarch64-apple-darwin
 
-      # Archive the binary
-      - name: Archive binary
+      # Build for normal targets
+      - name: Build for target
+        if: matrix.target != 'aarch64-apple-darwin'
+        run: cargo build --release --target ${{ matrix.target }}
+
+      # Create tarball archive
+      - name: Create tarball
         run: |
           mkdir -p dist
-          cp target/release/ai-commit dist/
+          cd target/${{ matrix.target }}/release
+          tar -czf ../../../dist/ai-commit-${{ matrix.target }}.tar.gz ai-commit
+          cd -
 
-      # Create or update the GitHub Release for this tag
+      # Upload artifacts for later use
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ai-commit-${{ matrix.target }}
+          path: dist/ai-commit-${{ matrix.target }}.tar.gz
+          if-no-files-found: error
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate checksums
+        run: |
+          find . -type f -name "*.tar.gz" | sort | xargs sha256sum > checksums.txt
+          cat checksums.txt
+
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v1
@@ -54,14 +98,8 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_RELEASE_PAT || secrets.GITHUB_TOKEN }}
-
-      # Upload the Rust binary as a release asset
-      - name: Upload Release Asset
-        uses: softprops/action-gh-release@v1
-        if: ${{ steps.create_release.outputs.upload_url }}
-        with:
-          files: dist/ai-commit
+          files: |
+            **/ai-commit-*.tar.gz
+            checksums.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GH_RELEASE_PAT || secrets.GITHUB_TOKEN }}
