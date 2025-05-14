@@ -8,39 +8,43 @@ permissions:
   contents: write
 
 jobs:
-  publish-homebrew:
-    runs-on: macos-latest
+  update-homebrew-formula:
+    name: Update Homebrew Formula
+    runs-on: ubuntu-latest
 
     steps:
       # 1. Fetch the ai‑commit binary attached by release.yml
-      - name: Download release asset
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ASSET_URL=$(gh api repos/${{ github.repository }}/releases/${{ github.event.release.id }} \
-                       --jq '.assets[] | select(.name=="ai-commit") | .url')
-          if [ -z "$ASSET_URL" ]; then
-            echo "::error::Could not find 'ai-commit' asset on release." && exit 1
-          fi
-          gh api -H "Accept: application/octet-stream" "$ASSET_URL" > ai-commit
-          chmod +x ai-commit
-          tar -czf ai-commit-macos-universal.tar.gz ai-commit
+    #   - name: Download release asset
+    #     env:
+    #       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     run: |
+    #       ASSET_URL=$(gh api repos/${{ github.repository }}/releases/${{ github.event.release.id }} \
+    #                    --jq '.assets[] | select(.name=="ai-commit") | .url')
+    #       if [ -z "$ASSET_URL" ]; then
+    #         echo "::error::Could not find 'ai-commit' asset on release." && exit 1
+    #       fi
+    #       gh api -H "Accept: application/octet-stream" "$ASSET_URL" > ai-commit
+    #       chmod +x ai-commit
+    #       tar -czf ai-commit-macos-universal.tar.gz ai-commit
 
       # 2. Calculate SHA‑256
-      - name: Compute SHA256
-        id: sha
-        run: echo "sha=$(shasum -a 256 ai-commit-macos-universal.tar.gz | awk '{print $1}')" >> $GITHUB_OUTPUT
+    #   - name: Compute SHA256
+    #     id: sha
+    #     run: echo "sha=$(shasum -a 256 ai-commit-macos-universal.tar.gz | awk '{print $1}')" >> $GITHUB_OUTPUT
 
       # 3. Upload the bottle tarball (overwrites if it already exists)
-      - name: Upload bottled tarball
-        uses: softprops/action-gh-release@v1
-        with:
-          files: ai-commit-macos-universal.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   - name: Upload bottled tarball
+    #     uses: softprops/action-gh-release@v1
+    #     with:
+    #       files: ai-commit-macos-universal.tar.gz
+    #     env:
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Extract version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
       # 4. Check out the Homebrew tap repo
-      - name: Checkout tap
+      - name: Checkout tap repo
         uses: actions/checkout@v3
         with:
           repository: anton-kochev/homebrew-ai-commit   # <- your tap repo
@@ -48,56 +52,64 @@ jobs:
           path: tap
 
       # 5. Update the formula with new URL, SHA and version
-      - name: Update formula
-        working-directory: tap
+      - name: Download release assets and calculate checksums
         run: |
-          set -e
-          FORMULA="Formula/ai-commit.rb"
-          TAG="${{ github.event.release.tag_name }}"
-          URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/ai-commit-macos-universal.tar.gz"
-          SHA="${{ steps.sha.outputs.sha }}"
-          VERSION="${TAG#v}"
+          VERSION=${{ steps.version.outputs.VERSION }}
+          TAG="v${VERSION}"
 
-          # Ensure formula exists; create skeleton if missing
-          if [ ! -f "$FORMULA" ]; then
-            mkdir -p Formula
-            cat > "$FORMULA" <<EOF
-class AiCommit < Formula
-  desc "AI‑assisted commit message generator"
-  homepage "https://github.com/${{ github.repository }}"
-  license "MIT"
+          # Download macOS ARM binary and calculate SHA
+          curl -L "https://github.com/yourusername/ai-commit/releases/download/${TAG}/ai-commit-aarch64-apple-darwin.tar.gz" -o aarch64-apple-darwin.tar.gz
+          MACOS_ARM_SHA=$(shasum -a 256 aarch64-apple-darwin.tar.gz | cut -d' ' -f1)
 
-  url "${URL}"
-  sha256 "${SHA}"
-  version "${VERSION}"
+          # Download macOS x86_64 binary and calculate SHA
+          curl -L "https://github.com/yourusername/ai-commit/releases/download/${TAG}/ai-commit-x86_64-apple-darwin.tar.gz" -o x86_64-apple-darwin.tar.gz
+          MACOS_X86_SHA=$(shasum -a 256 x86_64-apple-darwin.tar.gz | cut -d' ' -f1)
 
-  def install
-    bin.install "ai-commit"
-  end
+          # Download Linux binary and calculate SHA
+          curl -L "https://github.com/yourusername/ai-commit/releases/download/${TAG}/ai-commit-x86_64-unknown-linux-gnu.tar.gz" -o x86_64-unknown-linux-gnu.tar.gz
+          LINUX_X86_SHA=$(shasum -a 256 x86_64-unknown-linux-gnu.tar.gz | cut -d' ' -f1)
 
-  test do
-    system "#{bin}/ai-commit", "--help"
-  end
-end
-EOF
-          else
-            # BSD sed does not recognise \s – use [[:space:]]
-            sed -i '' -E "s|^[[:space:]]*url[[:space:]]+\".*\"|  url \"${URL}\"|" "$FORMULA"
-            sed -i '' -E "s|^[[:space:]]*sha256[[:space:]]+\"[A-Za-z0-9]+\"|  sha256 \"${SHA}\"|" "$FORMULA"
-            if grep -qE "^[[:space:]]*version[[:space:]]+\".*\"" "$FORMULA"; then
-              sed -i '' -E "s|^[[:space:]]*version[[:space:]]+\".*\"|  version \"${VERSION}\"|" "$FORMULA"
-            else
-              sed -i '' -E "2a\\
-  version \"${VERSION}\"" "$FORMULA"
-            fi
-          fi
+          # Ensure Formula directory exists
+          mkdir -p Formula
 
-          if git diff --quiet; then
-            echo "Formula already up to date — nothing to commit."
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add "$FORMULA"
-            git commit -m "ai-commit ${VERSION} (automated)"
-            git push
-          fi
+          # Create or update formula
+          cat > Formula/ai-commit.rb << EOF
+          class AiCommit < Formula
+            desc "Your Rust-based AI commit message generator"
+            homepage "https://github.com/yourusername/ai-commit"
+            version "${VERSION}"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/yourusername/ai-commit/releases/download/v#{version}/ai-commit-aarch64-apple-darwin.tar.gz"
+                sha256 "${MACOS_ARM_SHA}"
+              else
+                url "https://github.com/yourusername/ai-commit/releases/download/v#{version}/ai-commit-x86_64-apple-darwin.tar.gz"
+                sha256 "${MACOS_X86_SHA}"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.intel?
+                url "https://github.com/yourusername/ai-commit/releases/download/v#{version}/ai-commit-x86_64-unknown-linux-gnu.tar.gz"
+                sha256 "${LINUX_X86_SHA}"
+              end
+            end
+
+            def install
+              bin.install "ai-commit"
+            end
+
+            test do
+              system "#{bin}/ai-commit", "--version"
+            end
+          end
+          EOF
+      - name: Commit and push updated formula
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add Formula/ai-commit.rb
+          git commit -m "Update ai-commit to ${VERSION}"
+          git push
