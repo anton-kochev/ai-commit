@@ -58,15 +58,15 @@ jobs:
           TAG="v${VERSION}"
 
           # Download macOS ARM binary and calculate SHA
-          curl -L "https://github.com/yourusername/ai-commit/releases/download/${TAG}/ai-commit-aarch64-apple-darwin.tar.gz" -o aarch64-apple-darwin.tar.gz
+          curl -L "https://github.com/anton-kochev/ai-commit/releases/download/${TAG}/ai-commit-aarch64-apple-darwin.tar.gz" -o aarch64-apple-darwin.tar.gz
           MACOS_ARM_SHA=$(shasum -a 256 aarch64-apple-darwin.tar.gz | cut -d' ' -f1)
 
           # Download macOS x86_64 binary and calculate SHA
-          curl -L "https://github.com/yourusername/ai-commit/releases/download/${TAG}/ai-commit-x86_64-apple-darwin.tar.gz" -o x86_64-apple-darwin.tar.gz
+          curl -L "https://github.com/anton-kochev/ai-commit/releases/download/${TAG}/ai-commit-x86_64-apple-darwin.tar.gz" -o x86_64-apple-darwin.tar.gz
           MACOS_X86_SHA=$(shasum -a 256 x86_64-apple-darwin.tar.gz | cut -d' ' -f1)
 
           # Download Linux binary and calculate SHA
-          curl -L "https://github.com/yourusername/ai-commit/releases/download/${TAG}/ai-commit-x86_64-unknown-linux-gnu.tar.gz" -o x86_64-unknown-linux-gnu.tar.gz
+          curl -L "https://github.com/anton-kochev/ai-commit/releases/download/${TAG}/ai-commit-x86_64-unknown-linux-gnu.tar.gz" -o x86_64-unknown-linux-gnu.tar.gz
           LINUX_X86_SHA=$(shasum -a 256 x86_64-unknown-linux-gnu.tar.gz | cut -d' ' -f1)
 
           # Ensure Formula directory exists
@@ -76,22 +76,22 @@ jobs:
           cat > homebrew-tap/Formula/ai-commit.rb << EOF
           class AiCommit < Formula
             desc "Your Rust-based AI commit message generator"
-            homepage "https://github.com/yourusername/ai-commit"
+            homepage "https://github.com/anton-kochev/ai-commit"
             version "${VERSION}"
 
             on_macos do
               if Hardware::CPU.arm?
-                url "https://github.com/yourusername/ai-commit/releases/download/v#{version}/ai-commit-aarch64-apple-darwin.tar.gz"
+                url "https://github.com/anton-kochev/ai-commit/releases/download/v${VERSION}/ai-commit-aarch64-apple-darwin.tar.gz"
                 sha256 "${MACOS_ARM_SHA}"
               else
-                url "https://github.com/yourusername/ai-commit/releases/download/v#{version}/ai-commit-x86_64-apple-darwin.tar.gz"
+                url "https://github.com/anton-kochev/ai-commit/releases/download/v${VERSION}/ai-commit-x86_64-apple-darwin.tar.gz"
                 sha256 "${MACOS_X86_SHA}"
               end
             end
 
             on_linux do
               if Hardware::CPU.intel?
-                url "https://github.com/yourusername/ai-commit/releases/download/v#{version}/ai-commit-x86_64-unknown-linux-gnu.tar.gz"
+                url "https://github.com/anton-kochev/ai-commit/releases/download/v${VERSION}/ai-commit-x86_64-unknown-linux-gnu.tar.gz"
                 sha256 "${LINUX_X86_SHA}"
               end
             end
