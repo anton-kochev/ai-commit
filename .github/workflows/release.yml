@@ -71,7 +71,7 @@ jobs:
 
       # Upload artifacts for later use
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: ai-commit-${{ matrix.target }}
           path: dist/ai-commit-${{ matrix.target }}.tar.gz
@@ -82,7 +82,7 @@ jobs:
     needs: build
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v2
 
       - name: Generate checksums
         run: |
