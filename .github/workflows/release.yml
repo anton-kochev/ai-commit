@@ -10,81 +10,12 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    name: Build for ${{ matrix.target }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            name: linux-x86_64
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            name: darwin-x86_64
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            name: darwin-arm64
-
+  build-linux:
+    name: Build for Linux
+    runs-on: ubuntu-latest
     steps:
-      # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v3
-
-      # Set up Rust toolchain
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-
-      # Cache Cargo dependencies
-      - name: Cache Cargo
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.target }}-cargo-
-
-      # Special handling for cross-compilation to ARM macOS
-      - name: Build for ARM macOS
-        if: matrix.target == 'aarch64-apple-darwin'
-        run: |
-          rustup target add aarch64-apple-darwin
-          cargo build --release --target aarch64-apple-darwin
-
-      # Build for normal targets
-      - name: Build for target
-        if: matrix.target != 'aarch64-apple-darwin'
-        run: cargo build --release --target ${{ matrix.target }}
-
-      # Create tarball archive
-      - name: Create tarball
-        run: |
-          mkdir -p dist
-          cd target/${{ matrix.target }}/release
-          tar -czf ../../../dist/ai-commit-${{ matrix.target }}.tar.gz ai-commit
-          cd -
-
-      # Upload artifacts for later use
-      - name: Move artifacts for later use
-        run: |
-          mkdir -p $GITHUB_WORKSPACE/artifacts
-          cp dist/ai-commit-${{ matrix.target }}.tar.gz $GITHUB_WORKSPACE/artifacts/
-
-  release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: List artifacts
-        run: |
-          find $GITHUB_WORKSPACE -type f -name "*.tar.gz" || echo "No tarballs found in workspace"
-          echo "Workspace contents:"
-          ls -la $GITHUB_WORKSPACE
 
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
@@ -92,39 +23,81 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Add Rust targets
+      - name: Build Linux binary
         run: |
-          rustup target add x86_64-unknown-linux-gnu
+          cargo build --release
+          mkdir -p dist
+          cd target/release
+          tar -czf ../../dist/ai-commit-x86_64-unknown-linux-gnu.tar.gz ai-commit
+          cd -
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: linux-binary
+          path: dist/ai-commit-x86_64-unknown-linux-gnu.tar.gz
+  build-macos:
+    name: Build for macOS
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Add macOS targets
+        run: |
           rustup target add x86_64-apple-darwin
           rustup target add aarch64-apple-darwin
 
-      - name: Build Linux binary
-        run: |
-          cargo build --release --target x86_64-unknown-linux-gnu
-          mkdir -p dist
-          cd target/x86_64-unknown-linux-gnu/release
-          tar -czf ../../../dist/ai-commit-x86_64-unknown-linux-gnu.tar.gz ai-commit
-          cd -
-
       - name: Build macOS x86_64 binary
         run: |
-          mkdir -p dist
           cargo build --release --target x86_64-apple-darwin
+          mkdir -p dist
           cd target/x86_64-apple-darwin/release
           tar -czf ../../../dist/ai-commit-x86_64-apple-darwin.tar.gz ai-commit
           cd -
 
       - name: Build macOS ARM binary
         run: |
-          mkdir -p dist
           cargo build --release --target aarch64-apple-darwin
           cd target/aarch64-apple-darwin/release
           tar -czf ../../../dist/ai-commit-aarch64-apple-darwin.tar.gz ai-commit
           cd -
 
-      - name: Generate checksums
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@master
+        with:
+          name: macos-binaries
+          path: dist/*.tar.gz
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [build-linux, build-macos]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@master
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
         run: |
-          find . -type f -name "*.tar.gz" | sort | xargs sha256sum > checksums.txt
+          mkdir -p dist
+          cp artifacts/linux-binary/ai-commit-x86_64-unknown-linux-gnu.tar.gz dist/
+          cp artifacts/macos-binaries/*.tar.gz dist/
+
+          # Generate checksums
+          cd dist
+          sha256sum *.tar.gz > ../checksums.txt
+          cd ..
           cat checksums.txt
 
       - name: Create GitHub Release
