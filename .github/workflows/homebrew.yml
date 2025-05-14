@@ -44,12 +44,12 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
       # 4. Check out the Homebrew tap repo
-      - name: Checkout tap repo
+      - name: Checkout tap repository
         uses: actions/checkout@v3
         with:
-          repository: anton-kochev/homebrew-ai-commit   # <- your tap repo
+          repository: anton-kochev/homebrew-ai-commit  # Replace with your actual tap repo
           token: ${{ secrets.HOMEBREW_TAP_PAT }}
-          path: tap
+          path: homebrew-tap
 
       # 5. Update the formula with new URL, SHA and version
       - name: Download release assets and calculate checksums
@@ -73,7 +73,7 @@ jobs:
           mkdir -p Formula
 
           # Create or update formula
-          cat > Formula/ai-commit.rb << EOF
+          cat > homebrew-tap/Formula/ai-commit.rb << EOF
           class AiCommit < Formula
             desc "Your Rust-based AI commit message generator"
             homepage "https://github.com/yourusername/ai-commit"
@@ -108,6 +108,7 @@ jobs:
       - name: Commit and push updated formula
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
+          cd homebrew-tap
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add Formula/ai-commit.rb
