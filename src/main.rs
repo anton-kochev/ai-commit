@@ -1,5 +1,6 @@
 use api::provider::Provider;
 use clap::Parser;
+use dialoguer::console::Style;
 use env_logger::Builder;
 use log::{error, info, trace};
 
@@ -67,22 +68,33 @@ fn main() {
     let (provider, key) = config.get_provider_key();
     let api = Provider::create_provider(provider, key).expect("Failed to create provider");
 
-    let commit_message = match api.generate_commit_message(config.get_model(), &diff) {
-        Ok(msg) => format!(
-            "{}{}",
-            msg.summary,
-            match msg.description {
-                Some(desc) => format!("\n\n{}", desc),
-                None => "".to_string(),
+    println!("Generating commit message...");
+
+    let (commit_message, warning_message) =
+        match api.generate_commit_message(config.get_model(), &diff) {
+            Ok(msg) => (
+                format!(
+                    "{}{}",
+                    msg.summary,
+                    match msg.description {
+                        Some(desc) => format!("\n\n{}", desc),
+                        None => "".to_string(),
+                    }
+                ),
+                msg.warning,
+            ),
+            Err(e) => {
+                error!("Failed to generate commit message: {}", e);
+                return;
             }
-        ),
-        Err(e) => {
-            error!("Failed to generate commit message: {}", e);
-            return;
-        }
-    };
+        };
 
     println!("{}", &commit_message);
+
+    if let Some(warning) = warning_message {
+        let warning_style = Style::new().white().bold().on_red();
+        println!("{}", warning_style.apply_to(warning));
+    }
 
     match cli::prompt_user_for_action() {
         UserChoice::Commit => {
