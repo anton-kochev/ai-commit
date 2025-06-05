@@ -1,8 +1,9 @@
 use super::openai::OpenAiApi;
 
 pub struct CommitMessage {
-    pub summary: String,
     pub description: Option<String>,
+    pub summary: String,
+    pub warning: Option<String>,
 }
 
 pub enum Provider {

@@ -52,7 +52,7 @@ fn main() {
     };
 
     // Get the prompt for the model input
-    let prompt = format!("{}\n\nDiff:\n{}", prompt::get_instructions(), &diff);
+    let prompt = format!("{}\n\nDiff:\n{}", prompt::get_system_prompt(), &diff);
     // Estimate cost before proceeding
     let cost = cost_estimation::estimate_cost(config.get_model(), &prompt);
 

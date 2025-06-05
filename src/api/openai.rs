@@ -30,8 +30,9 @@ struct ChatFunctionCall {
 
 #[derive(Deserialize)]
 struct ChatFunctionCallResult {
-    summary: String,
     description: Option<String>,
+    summary: String,
+    warning: Option<String>,
 }
 
 /// Struct for the OpenAI API client.
@@ -67,7 +68,7 @@ impl OpenAiApi {
            "messages": [
             {
                 "role": "developer",
-                "content": prompt::get_instructions()
+                "content": prompt::get_system_prompt()
             },
             {
                 "role": "user",
@@ -80,8 +81,14 @@ impl OpenAiApi {
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "summary": { "type": "string" },
-                            "description": { "type": "string" }
+                            "description": { "type": "string" },
+                            "summary": { "type": "string",
+                                "description": "A one-sentence description of the key change, starting with a capital letter."
+                            },
+                            "warning": {
+                                "type": "string",
+                                "description": "A string containing all detected potential sensitive information, or `null` if none found.",
+                            }
                         },
                         "required": ["summary"],
                         "additionalProperties": false
@@ -124,8 +131,9 @@ impl OpenAiApi {
 
         // Return the CommitMessage
         Ok(CommitMessage {
-            summary: commit_message.summary,
             description: commit_message.description,
+            summary: commit_message.summary,
+            warning: commit_message.warning,
         })
     }
 }
