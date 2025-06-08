@@ -67,7 +67,7 @@ impl OpenAiApi {
            "model": model,
            "messages": [
             {
-                "role": "developer",
+                "role": "system",
                 "content": prompt::get_system_prompt()
             },
             {
