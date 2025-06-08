@@ -22,7 +22,7 @@ fn main() {
 
     // Initialize the logger with a default level
     // This will use RUST_LOG if set, otherwise fall back to 'info' level
-    Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    Builder::from_env(env_logger::Env::default()).init();
 
     trace!("Starting ai-commit!");
     trace!("Parsed cli args: {:?}", cli_config);
@@ -35,7 +35,7 @@ fn main() {
         }
     };
 
-    info!("Using model: {}", config.get_model());
+    println!("Using model: {}", config.get_model());
 
     // Retrieve the staged diff
     let diff = match git::get_staged_diff() {
@@ -57,7 +57,7 @@ fn main() {
     // Estimate cost before proceeding
     let cost = cost_estimation::estimate_cost(config.get_model(), &prompt);
 
-    info!("{}", cost_estimation::format_cost_estimate(&cost));
+    println!("{}", cost_estimation::format_cost_estimate(&cost));
 
     // Generate the initial commit message suggestion
     if !cli::prompt_for_confirmation("Do you want to proceed?") {
