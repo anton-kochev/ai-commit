@@ -1,5 +1,5 @@
 use git2::{DiffFormat, Repository};
-use log::debug;
+use log::{debug, warn};
 use std::path::Path;
 
 pub fn get_staged_diff() -> Result<String, git2::Error> {
@@ -16,10 +16,13 @@ pub fn get_staged_diff() -> Result<String, git2::Error> {
             set
         }
         Err(e) => {
-            eprintln!("Warning: could not load ignore patterns: {}", e);
+            warn!("Warning: could not load ignore patterns: {}", e);
             // Fallback to an empty GlobSet.
             let builder = globset::GlobSetBuilder::new();
-            builder.build().unwrap()
+            builder.build().unwrap_or_else(|_| {
+                warn!("Failed to create GlobSet, using empty set");
+                Default::default()
+            })
         }
     };
 
@@ -58,7 +61,7 @@ pub fn get_staged_diff() -> Result<String, git2::Error> {
 }
 
 /// Commit staged changes with the given commit message
-pub fn commit_changes(commit_message: String) -> Result<(), git2::Error> {
+pub fn commit_changes(commit_message: &str) -> Result<(), git2::Error> {
     // Open the current repository
     let repo = Repository::open(".")?;
 

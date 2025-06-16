@@ -1,23 +1,25 @@
 /// The options presented to the user.
 pub enum UserChoice {
+    Edit,
     Commit,
     Cancel,
 }
 
 /// Prompt the user with the suggested commit message and give options for action.
 pub fn prompt_user_for_action() -> UserChoice {
-    let options = &["Commit", "Cancel"];
+    let options = &["Commit", "Edit and Commit", "Cancel"];
 
     // Use dialoguer to create a selection prompt
     let selection = dialoguer::Select::with_theme(&dialoguer::theme::ColorfulTheme::default())
         .with_prompt("What would you like to do?")
         .items(options)
-        .default(1)
+        .default(2)
         .interact()
         .unwrap_or(1);
 
     match selection {
         0 => UserChoice::Commit,
+        1 => UserChoice::Edit,
         _ => UserChoice::Cancel,
     }
 }

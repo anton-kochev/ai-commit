@@ -1,3 +1,4 @@
+use anyhow::{Context, Ok, Result};
 use log::warn;
 use tiktoken_rs::cl100k_base;
 
@@ -5,9 +6,9 @@ use tiktoken_rs::cl100k_base;
 pub type CostEstimate = (usize, f64);
 
 /// Estimates the cost of an API request based on the input token count
-pub fn estimate_cost(model: &str, prompt: &str) -> CostEstimate {
+pub fn estimate_cost(model: &str, prompt: &str) -> Result<CostEstimate> {
     // Count tokens using the appropriate tokenizer
-    let tokenizer = cl100k_base().unwrap();
+    let tokenizer = cl100k_base().context("Failed to load tokenizer")?;
     let token_count = tokenizer.encode_with_special_tokens(prompt).len();
 
     // Calculate cost based on model
@@ -40,7 +41,7 @@ pub fn estimate_cost(model: &str, prompt: &str) -> CostEstimate {
 
     let estimated_cost = (token_count as f64) * (price_per_1000 / 1000.0);
 
-    (token_count, estimated_cost)
+    Ok((token_count, estimated_cost))
 }
 
 pub fn format_cost_estimate(cost_estimate: &CostEstimate) -> String {
