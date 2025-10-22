@@ -6,6 +6,7 @@ A Rust-based tool that uses OpenAI's API to generate high-quality Git commit mes
 
 - Automatically generates commit messages based on your staged changes
 - Interactive CLI for reviewing and confirming commit messages
+- Interactive commit message editing with your preferred editor
 - Cost estimation and confirmation before making API calls
 - Support for ignoring files via `.ai-commit-ignore`
 - Configuration caching for models and API keys
@@ -73,14 +74,16 @@ The repository is available at [homebrew-ai-commit](https://github.com/anton-koc
 
 3. Review the suggested commit message and choose to:
    - Accept the message and commit
+   - Edit the message with your preferred editor and commit
    - Cancel the operation
 
 ## Configuration
 
-AI Commit primarily uses command-line arguments for configuration. However, it also caches certain settings like the model choice and API keys in a configuration file for future use.
+AI Commit primarily uses command-line arguments for configuration. However, it also caches certain settings like the model choice and API keys in a configuration file (`~/.config/ai-commit/config.json`) for future use.
 
 - **Model**: Specify the model using the `-m` or `--model` flag. This choice is cached.
 - **API Key**: Provide your API key using the `-k` or `--api-key` flag in the format `<provider>=<key>`. This is also cached.
+- **Context**: Provide additional context using the `-c` or `--context` flag (e.g., issue numbers, descriptions).
 
 Supported Providers:
 
@@ -94,6 +97,7 @@ AI Commit supports the following command-line options:
 
 - `-m <model>`, `--model <model>`: Specify the model to use (e.g., `gpt-4o`). This value is cached.
 - `-k <provider>=<key>`, `--api-key <provider>=<key>`: Specify the API key provider and key (e.g., `openai=sk-yourkey`). This value is cached.
+- `-c <context>`, `--context <context>`: Provide additional context for the commit message (e.g., issue numbers, descriptions).
 - `--help`: Show help information
 
 Example:
@@ -107,11 +111,16 @@ ai-commit -m gpt-4o -k openai=sk-yourkey
 AI Commit supports the following environment variables:
 
 - `RUST_LOG`: Controls the logging level (e.g., `trace`, `debug`, `info`, `warn`, `error`). Defaults to `info`.
+- `EDITOR`: Specifies the text editor to use when editing commit messages. Defaults to `nano` if not set.
 
 Example:
 
 ```bash
 RUST_LOG=debug ai-commit
+```
+
+```bash
+EDITOR=vim ai-commit
 ```
 
 ## Ignoring Files
