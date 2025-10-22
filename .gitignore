@@ -21,3 +21,11 @@ target/
 .env
 
 config.json
+
+# Claude Code
+/.claude/
+
+# Emacs temporary files
+*~
+#*#
+
