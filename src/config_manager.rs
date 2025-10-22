@@ -16,15 +16,6 @@ pub struct AppConfig {
 }
 
 impl AppConfig {
-    pub fn new() -> Self {
-        AppConfig {
-            api_key: None,
-            api_provider: None,
-            model: None,
-            user_desc: None,
-        }
-    }
-
     pub fn api_key(&mut self, value: String) -> &mut Self {
         self.api_key = Some(value);
         self
