@@ -83,7 +83,7 @@ pub fn commit_changes(commit_message: &str) -> Result<(), git2::Error> {
         Some("HEAD"),
         &signature,
         &signature,
-        &commit_message,
+        commit_message,
         &tree,
         &[], // Start with no parents
     );
@@ -104,7 +104,7 @@ pub fn commit_changes(commit_message: &str) -> Result<(), git2::Error> {
                             Some("HEAD"),
                             &signature,
                             &signature,
-                            &commit_message,
+                            commit_message,
                             &tree,
                             &[&head_commit],
                         )?;
@@ -120,7 +120,7 @@ pub fn commit_changes(commit_message: &str) -> Result<(), git2::Error> {
                     Some("HEAD"),
                     &signature,
                     &signature,
-                    &commit_message,
+                    commit_message,
                     &tree,
                     &[],
                 )?;

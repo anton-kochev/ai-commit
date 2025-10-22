@@ -63,10 +63,20 @@ impl OpenAiApi {
     }
 
     /// Generates a commit message by sending the provided diff to the OpenAI ChatGPT API.
-    pub fn generate_commit_message(self, model: &str, diff: &str) -> ProviderResult<CommitMessage> {
+    pub fn generate_commit_message(
+        self,
+        model: &str,
+        diff: &str,
+        context: Option<&str>,
+    ) -> ProviderResult<CommitMessage> {
         trace!("Creating HTTP client with 120 seconds timeout");
 
         // Build the JSON request body.
+        let user_description = context.unwrap_or("");
+        let content = format!(
+            "Git Diff:\n{}\n\nUser Description:\n{}",
+            diff, user_description
+        );
         let request_body = json!({
            "model": model,
            "messages": [
@@ -76,7 +86,7 @@ impl OpenAiApi {
             },
             {
                 "role": "user",
-                "content": diff
+                "content": content
             }],
             "functions": [
                 {

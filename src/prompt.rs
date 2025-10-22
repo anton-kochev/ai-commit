@@ -74,8 +74,6 @@ You are a code review assistant specializing in generating structured Git commit
 
 **Your task:**
 Analyze the above. Produce and print a JSON object as specified, with a markdown dashed list in `description` and any warnings in `warning`. If none, set `warning` to `null`.
-
-**Use your Python code tools as needed for parsing, pattern detection, and summarization.**
         "#,
     )
 }

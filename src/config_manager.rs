@@ -12,11 +12,45 @@ pub struct AppConfig {
     pub api_key: Option<String>,
     pub api_provider: Option<String>,
     pub model: Option<String>,
+    pub user_desc: Option<String>,
 }
 
 impl AppConfig {
+    pub fn new() -> Self {
+        AppConfig {
+            api_key: None,
+            api_provider: None,
+            model: None,
+            user_desc: None,
+        }
+    }
+
+    pub fn api_key(&mut self, value: String) -> &mut Self {
+        self.api_key = Some(value);
+        self
+    }
+
+    pub fn api_provider(&mut self, value: String) -> &mut Self {
+        self.api_provider = Some(value);
+        self
+    }
+
+    pub fn model(&mut self, value: String) -> &mut Self {
+        self.model = Some(value);
+        self
+    }
+
+    pub fn user_desc(&mut self, value: String) -> &mut Self {
+        self.user_desc = Some(value);
+        self
+    }
+
     pub fn get_model(&self) -> &str {
         self.model.as_deref().expect("Model field is missing")
+    }
+
+    pub fn get_user_desc(&self) -> Option<&str> {
+        self.user_desc.as_deref()
     }
 
     pub fn get_provider_key(&self) -> (&str, &str) {
@@ -75,11 +109,13 @@ pub fn load_config(cli_config: CliConfig) -> Result<AppConfig, &'static str> {
 
     // Update the config with CLI arguments
     if let Some((provider, key)) = cli_config.api_key {
-        config.api_key = Some(key);
-        config.api_provider = Some(provider);
+        config.api_key(key).api_provider(provider);
     }
     if let Some(model) = cli_config.model {
-        config.model = Some(model);
+        config.model(model);
+    }
+    if let Some(context) = cli_config.context {
+        config.user_desc(context);
     }
 
     // Validate the mandatory fields

@@ -30,12 +30,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Builder::from_env(env_logger::Env::default()).init();
 
     trace!("Starting ai-commit!");
-    trace!("Parsed cli args: {:?}", cli_config);
+    trace!("Parsed cli args: {:?}", &cli_config);
 
     // Load existing configuration or use defaults
     let config = match config_manager::load_config(cli_config) {
         Ok(config) => config,
         Err(..) => {
+            error!("Failed to load configuration. Please check your settings.");
+            terminal.write_line("Error loading configuration")?;
             process::exit(1);
         }
     };
@@ -52,7 +54,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             diff
         }
         Err(e) => {
-            error!("Failed to get staged diff: {}", e);
+            error!("{}", e);
+            terminal.write_line("Error retrieving staged changes")?;
             process::exit(1);
         }
     };
@@ -76,7 +79,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     terminal.write_line("Generating commit message...")?;
 
     let (mut commit_message, warning_message) =
-        match api.generate_commit_message(config.get_model(), &diff) {
+        match api.generate_commit_message(config.get_model(), &diff, config.get_user_desc()) {
             Ok(msg) => (
                 format!(
                     "{}{}",
@@ -115,7 +118,7 @@ fn handle_commit_message(commit_message: &mut String) -> Result<(), std::io::Err
             info!("User chose to edit the commit message.");
             edit_message(commit_message)?;
 
-            if let Err(e) = git::commit_changes(&commit_message) {
+            if let Err(e) = git::commit_changes(commit_message) {
                 error!("Failed to commit changes: {}", e);
             }
 
@@ -124,7 +127,7 @@ fn handle_commit_message(commit_message: &mut String) -> Result<(), std::io::Err
         UserChoice::Commit => {
             info!("User accepted the commit message.");
 
-            if let Err(e) = git::commit_changes(&commit_message) {
+            if let Err(e) = git::commit_changes(commit_message) {
                 error!("Failed to commit changes: {}", e);
             }
 

@@ -20,8 +20,8 @@ pub fn edit_message(commit_message: &mut String) -> Result<(), std::io::Error> {
                 return Ok(());
             }
 
-            return Ok(());
+            Ok(())
         }
-        Err(e) => return Err(e),
+        Err(e) => Err(e),
     }
 }

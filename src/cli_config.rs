@@ -15,6 +15,9 @@ pub struct CliConfig {
     /// it can be overridden by using the `--model` again.
     #[arg(short = 'm', long)]
     pub model: Option<String>,
+    /// Specify the additional context for the commit message, such as the issue number or a description.
+    #[arg(short = 'c', long = "context", value_name = "context")]
+    pub context: Option<String>,
 }
 
 fn provider_key_parser(provider_key_string: &str) -> Result<(String, String)> {

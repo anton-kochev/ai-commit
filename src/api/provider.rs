@@ -61,9 +61,10 @@ impl Provider {
         self,
         model: &str,
         prompt: &str,
+        context: Option<&str>,
     ) -> ProviderResult<CommitMessage> {
         match self {
-            Provider::OpenAI(api) => api.generate_commit_message(model, prompt),
+            Provider::OpenAI(api) => api.generate_commit_message(model, prompt, context),
         }
     }
 }
