@@ -6,40 +6,56 @@ use tiktoken_rs::cl100k_base;
 pub type CostEstimate = (usize, f64);
 
 /// Estimates the cost of an API request based on the input token count
+/// Note: This uses INPUT token pricing only. Output tokens typically cost 2-4x more.
 pub fn estimate_cost(model: &str, prompt: &str) -> Result<CostEstimate> {
     // Count tokens using the appropriate tokenizer
     let tokenizer = cl100k_base().context("Failed to load tokenizer")?;
     let token_count = tokenizer.encode_with_special_tokens(prompt).len();
 
-    // Calculate cost based on model
-    // Prices are in dollars per 1K tokens
-    let price_per_1000 = match model {
-        "gpt-4.1" => 0.001,          // $1.00 per 1M tokens
-        "gpt-4.1-mini" => 0.0002,    // $0.20 per 1M tokens
-        "gpt-4.1-nano" => 0.00005,   // $0.05 per 1M tokens
-        "gpt-4.5-preview" => 0.0375, // $37.50 per 1M tokens
-        "gpt-4o" => 0.00125,         // $1.25 per 1M tokens
-        "gpt-4o-mini" => 0.000075,   // $0.075 per 1M tokens
-        "o1" => 0.0075,              // $7.50 per 1M tokens
-        "o1-mini" => 0.00055,        // $0.55 per 1M tokens
-        "o1-pro" => 0.075,           // $75.00 per 1M tokens
-        "o3" => 0.005,               // $5 per 1M tokens
-        "o3-mini" => 0.00055,        // $0.55 per 1M tokens
-        "o4-mini" => 0.0011,         // $1.10 per 1M tokens
-        // Computer Use Preview models
-        "computer-use-preview" => 0.0015, // $1.50 per 1M tokens
-        // Legacy models (keeping for backward compatibility)
-        "gpt-4" => 0.03,
-        "gpt-3.5-turbo" => 0.0015,
+    // Calculate cost based on model (INPUT token pricing per 1M tokens)
+    // Prices sourced from OpenAI pricing as of October 2025
+    let price_per_million = match model {
+        // GPT-5 family (latest generation, released August 2025)
+        "gpt-5" | "gpt-5-chat-latest" => 1.25,
+        "gpt-5-mini" => 0.25,
+        "gpt-5-nano" => 0.05,
+
+        // GPT-4o family (production models)
+        "gpt-4o" | "chatgpt-4o-latest" => 2.50,
+        "gpt-4o-2024-11-20" => 2.50,
+        "gpt-4o-2024-08-06" => 2.50,
+        "gpt-4o-2024-05-13" => 5.00, // Older version, higher price
+        "gpt-4o-mini" | "gpt-4o-mini-2024-07-18" => 0.15,
+
+        // GPT-4 Turbo family
+        "gpt-4-turbo" | "gpt-4-turbo-2024-04-09" => 10.00,
+        "gpt-4-turbo-preview" | "gpt-4-0125-preview" | "gpt-4-1106-preview" => 10.00,
+
+        // GPT-4 base models (legacy, expensive)
+        "gpt-4" | "gpt-4-0613" => 30.00,      // 8K context
+        "gpt-4-32k" | "gpt-4-32k-0613" => 60.00, // 32K context
+
+        // GPT-3.5 Turbo family (legacy, cost-effective)
+        "gpt-3.5-turbo" | "gpt-3.5-turbo-0125" | "gpt-3.5-turbo-1106" => 0.50,
+        "gpt-3.5-turbo-instruct" => 1.50,
+
+        // Reasoning models (o-series) - expensive but powerful
+        "o1" => 15.00,
+        "o1-preview" | "o1-preview-2024-09-12" => 15.00,
+        "o1-mini" | "o1-mini-2024-09-12" => 3.00,
+        "o3-mini" => 1.10,
+        "o3" => 10.00,
+        "o3-pro" => 30.00,
+        "o4-mini" => 1.10,
 
         // Default fallback for unknown models
         _ => {
-            warn!("Unknown model, using default pricing.");
-            0.001 // Default to $1.00 per 1M tokens = $0.001 per 1K tokens
+            warn!("Unknown model '{}', using default pricing of $2.50 per 1M input tokens.", model);
+            2.50 // Default to gpt-4o pricing
         }
     };
 
-    let estimated_cost = (token_count as f64) * (price_per_1000 / 1000.0);
+    let estimated_cost = (token_count as f64) * (price_per_million / 1_000_000.0);
 
     Ok((token_count, estimated_cost))
 }

@@ -148,8 +148,16 @@ fn save_config(config: &AppConfig) -> io::Result<()> {
                 fs::create_dir_all(parent_dir)?;
             }
 
+            // Create a config copy
+            let config_to_save = AppConfig {
+                api_key: config.api_key.clone(),
+                api_provider: config.api_provider.clone(),
+                model: config.model.clone(),
+                user_desc: None, // Do not save user_desc
+            };
+
             // Serialize and save the config
-            let content = serde_json::to_string_pretty(&config)?;
+            let content = serde_json::to_string_pretty(&config_to_save)?;
 
             fs::write(&config_path, content)?;
 
