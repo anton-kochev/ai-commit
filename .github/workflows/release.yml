@@ -125,4 +125,4 @@ jobs:
           files: |
             dist/*.tar.gz
             checksums.txt
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.HOMEBREW_TAP_PAT }}
