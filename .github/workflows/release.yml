@@ -125,5 +125,4 @@ jobs:
           files: |
             dist/*.tar.gz
             checksums.txt
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_RELEASE_PAT || secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
