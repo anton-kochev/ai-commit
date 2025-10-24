@@ -3,8 +3,10 @@ use log::{debug, warn};
 use std::path::Path;
 
 pub fn get_staged_diff() -> Result<String, git2::Error> {
-    // Open the current repository.
-    let repo = Repository::open(".")?;
+    // Discover and open the repository from the current directory.
+    // This searches upward from the current directory to find the .git directory,
+    // allowing the command to work from any subdirectory within the repository.
+    let repo = Repository::discover(".")?;
 
     // Get the repository working directory.
     let repo_path = repo.workdir().unwrap_or(Path::new("."));
@@ -62,8 +64,8 @@ pub fn get_staged_diff() -> Result<String, git2::Error> {
 
 /// Commit staged changes with the given commit message
 pub fn commit_changes(commit_message: &str) -> Result<(), git2::Error> {
-    // Open the current repository
-    let repo = Repository::open(".")?;
+    // Discover and open the repository from the current directory
+    let repo = Repository::discover(".")?;
 
     // Ensure there is something to commit
     let mut index = repo.index()?;
