@@ -1,3 +1,5 @@
+[![Build and Release](https://github.com/anton-kochev/ai-commit/actions/workflows/release.yml/badge.svg)](https://github.com/anton-kochev/ai-commit/actions/workflows/release.yml)
+
 # AI Commit
 
 A Rust-based tool that uses OpenAI's API to generate high-quality Git commit messages based on your staged changes.
