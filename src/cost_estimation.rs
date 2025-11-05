@@ -13,8 +13,10 @@ pub fn estimate_cost(model: &str, prompt: &str) -> Result<CostEstimate> {
     let token_count = tokenizer.encode_with_special_tokens(prompt).len();
 
     // Calculate cost based on model (INPUT token pricing per 1M tokens)
-    // Prices sourced from OpenAI pricing as of October 2025
+    // Prices sourced from OpenAI and Anthropic pricing as of January 2025
     let price_per_million = match model {
+        // ===== OpenAI Models =====
+
         // GPT-5 family (latest generation, released August 2025)
         "gpt-5" | "gpt-5-chat-latest" => 1.25,
         "gpt-5-mini" => 0.25,
@@ -47,6 +49,25 @@ pub fn estimate_cost(model: &str, prompt: &str) -> Result<CostEstimate> {
         "o3" => 10.00,
         "o3-pro" => 30.00,
         "o4-mini" => 1.10,
+
+        // ===== Anthropic Claude Models =====
+
+        // Claude Opus family (most powerful)
+        "claude-opus-4.1" | "claude-opus-4-20250514" => 15.00,
+        "claude-opus-4" | "claude-opus-4-20250104" => 15.00,
+        "claude-opus-3" | "claude-3-opus-20240229" | "claude-3-opus-latest" => 15.00,
+
+        // Claude Sonnet family (balanced performance)
+        "claude-sonnet-4.5" | "claude-sonnet-4-5-20250929" => 3.00, // Standard context (≤200K)
+        "claude-sonnet-4" | "claude-sonnet-4-20250104" => 3.00,
+        "claude-sonnet-3.7" | "claude-3-7-sonnet-20250219" => 3.00,
+        "claude-3-5-sonnet-20241022" | "claude-3-5-sonnet-latest" => 3.00,
+        "claude-3-5-sonnet-20240620" => 3.00,
+
+        // Claude Haiku family (fast and efficient)
+        "claude-haiku-4.5" | "claude-haiku-4-5-20250416" => 1.00,
+        "claude-haiku-3.5" | "claude-3-5-haiku-20241022" | "claude-3-5-haiku-latest" => 0.80,
+        "claude-haiku-3" | "claude-3-haiku-20240307" => 0.25,
 
         // Default fallback for unknown models
         _ => {

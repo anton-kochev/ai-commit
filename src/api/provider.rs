@@ -2,6 +2,7 @@ use std::fmt;
 
 use reqwest::StatusCode;
 
+use super::anthropic::AnthropicApi;
 use super::openai::OpenAiApi;
 
 pub type ProviderResult<T> = std::result::Result<T, ProviderError>;
@@ -36,7 +37,7 @@ impl fmt::Display for ProviderError {
 
 pub enum Provider {
     OpenAI(OpenAiApi),
-    // Anthropic(),
+    Anthropic(AnthropicApi),
     // GoogleGemini(),
 }
 
@@ -44,7 +45,7 @@ impl Provider {
     pub fn validate(s: &str) -> ProviderResult<()> {
         match s {
             "openai" => Ok(()),
-            // "anthropic" => Ok(()),
+            "anthropic" => Ok(()),
             // "google-gemini" => Ok(()),
             p => Err(ProviderError::UnsupportedProvider(p.to_string())),
         }
@@ -53,6 +54,7 @@ impl Provider {
     pub fn create_provider(provider: &str, api_key: &str) -> ProviderResult<Self> {
         match provider {
             "openai" => Ok(Provider::OpenAI(OpenAiApi::new(api_key.to_string())?)),
+            "anthropic" => Ok(Provider::Anthropic(AnthropicApi::new(api_key.to_string())?)),
             p => Err(ProviderError::UnsupportedProvider(p.to_string())),
         }
     }
@@ -65,6 +67,7 @@ impl Provider {
     ) -> ProviderResult<CommitMessage> {
         match self {
             Provider::OpenAI(api) => api.generate_commit_message(model, prompt, context),
+            Provider::Anthropic(api) => api.generate_commit_message(model, prompt, context),
         }
     }
 }
