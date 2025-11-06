@@ -13,7 +13,7 @@ pub fn estimate_cost(model: &str, prompt: &str) -> Result<CostEstimate> {
     let token_count = tokenizer.encode_with_special_tokens(prompt).len();
 
     // Calculate cost based on model (INPUT token pricing per 1M tokens)
-    // Prices sourced from OpenAI and Anthropic pricing as of January 2025
+    // Prices sourced from OpenAI and Anthropic pricing as of November 2025
     let price_per_million = match model {
         // ===== OpenAI Models =====
 
