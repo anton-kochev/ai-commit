@@ -1,4 +1,3 @@
-[![Build and Release](https://github.com/anton-kochev/ai-commit/actions/workflows/release.yml/badge.svg)](https://github.com/anton-kochev/ai-commit/actions/workflows/release.yml)
 [![Update Homebrew Formula](https://github.com/anton-kochev/ai-commit/actions/workflows/homebrew.yml/badge.svg)](https://github.com/anton-kochev/ai-commit/actions/workflows/homebrew.yml)
 
 # AI Commit
