@@ -12,7 +12,7 @@ A Rust-based tool that uses OpenAI's API to generate high-quality Git commit mes
 - Cost estimation and confirmation before making API calls
 - Support for ignoring files via `.ai-commit-ignore`
 - Configuration caching for models and API keys
-- Support for multiple AI providers (currently OpenAI)
+- Support for multiple AI providers (currently OpenAI and Anthropic)
 - Token-based cost calculation using tiktoken
 - Sensitive information detection with warnings
 - Structured commit message format with optional descriptions
