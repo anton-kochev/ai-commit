@@ -25,6 +25,9 @@ config.json
 # Claude Code
 /.claude/
 
+# Service Files
+TODO.md
+
 # Emacs temporary files
 *~
 #*#

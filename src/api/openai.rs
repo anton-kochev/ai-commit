@@ -145,16 +145,6 @@ impl OpenAiApi {
                 )
             })?;
 
-        // Log the raw response for debugging
-        let response_text = response.text().map_err(|e| {
-            error!("Failed to read response text: {}", e);
-            crate::api::provider::ProviderError::ApiError(
-                reqwest::StatusCode::INTERNAL_SERVER_ERROR,
-                e.to_string(),
-            )
-        })?;
-        trace!("API Response: {}", response_text);
-
         // Check if the response is an error first
         if let Ok(error_response) = serde_json::from_str::<ErrorResponse>(&response_text) {
             let error_msg = match error_response.error.error_type.as_str() {

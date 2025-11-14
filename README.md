@@ -100,12 +100,13 @@ AI Commit supports the following command-line options:
 - `-m <model>`, `--model <model>`: Specify the model to use (e.g., `gpt-4o`). This value is cached.
 - `-k <provider>=<key>`, `--api-key <provider>=<key>`: Specify the API key provider and key (e.g., `openai=sk-yourkey`). This value is cached.
 - `-c <context>`, `--context <context>`: Provide additional context for the commit message (e.g., issue numbers, descriptions).
+- `--context-lines <lines>`: Number of context lines to show in the git diff (default: 10). Higher values provide more context to the AI but increase token usage.
 - `--help`: Show help information
 
 Example:
 
 ```bash
-ai-commit -m gpt-4o -k openai=sk-yourkey
+ai-commit -m gpt-4o -k openai=sk-yourkey --context-lines 5
 ```
 
 ## Environment Variables
