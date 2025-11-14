@@ -17,6 +17,10 @@ A Rust-based tool that uses OpenAI's API to generate high-quality Git commit mes
 - Sensitive information detection with warnings
 - Structured commit message format with optional descriptions
 
+## Release Notes
+
+See [CHANGELOG.md](./CHANGELOG.md) for detailed release notes and version history.
+
 ## Installation
 
 ### Prerequisites
