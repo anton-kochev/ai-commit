@@ -13,6 +13,7 @@ mod cli_config;
 mod commit_editor;
 mod config_manager;
 mod cost_estimation;
+mod diff;
 mod git;
 mod ignore;
 mod prompt;
@@ -45,7 +46,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     terminal.write_line(&format!("Using model: {}", config.get_model()))?;
 
     // Retrieve the staged diff
-    let diff = match git::get_staged_diff() {
+    let diff = match git::get_staged_diff(config.context_lines) {
         Ok(diff) => {
             if diff.is_empty() {
                 terminal.write_line("No staged changes found")?;
@@ -59,6 +60,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             process::exit(1);
         }
     };
+
+    trace!("Staged diff: \n{}", &diff);
 
     // Get the prompt for the model input
     let prompt = format!("{}\n\nDiff:\n{}", prompt::get_system_prompt(), &diff);
@@ -91,9 +94,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ),
                 msg.warning,
             ),
-            Err(e) => {
-                error!("Failed to generate commit message: {}", e);
-                terminal.write_line("Error generating commit message")?;
+            Err(_) => {
                 process::exit(1);
             }
         };

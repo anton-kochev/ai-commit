@@ -13,6 +13,12 @@ pub struct AppConfig {
     pub api_provider: Option<String>,
     pub model: Option<String>,
     pub user_desc: Option<String>,
+    #[serde(default = "default_context_lines")]
+    pub context_lines: u32,
+}
+
+fn default_context_lines() -> u32 {
+    10
 }
 
 impl AppConfig {
@@ -108,6 +114,7 @@ pub fn load_config(cli_config: CliConfig) -> Result<AppConfig, &'static str> {
     if let Some(context) = cli_config.context {
         config.user_desc(context);
     }
+    config.context_lines = cli_config.context_lines;
 
     // Validate the mandatory fields
     if config.model.is_none() {
@@ -145,6 +152,7 @@ fn save_config(config: &AppConfig) -> io::Result<()> {
                 api_provider: config.api_provider.clone(),
                 model: config.model.clone(),
                 user_desc: None, // Do not save user_desc
+                context_lines: config.context_lines,
             };
 
             // Serialize and save the config

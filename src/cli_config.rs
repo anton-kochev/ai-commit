@@ -18,6 +18,9 @@ pub struct CliConfig {
     /// Specify the additional context for the commit message, such as the issue number or a description.
     #[arg(short = 'c', long = "context", value_name = "context")]
     pub context: Option<String>,
+    /// Number of context lines to show in diff (default: 10)
+    #[arg(long = "context-lines", value_name = "lines", default_value = "10")]
+    pub context_lines: u32,
 }
 
 fn provider_key_parser(provider_key_string: &str) -> Result<(String, String)> {

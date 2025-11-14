@@ -1,66 +1,7 @@
-use git2::{DiffFormat, Repository};
-use log::{debug, warn};
-use std::path::Path;
+use git2::Repository;
 
-pub fn get_staged_diff() -> Result<String, git2::Error> {
-    // Discover and open the repository from the current directory.
-    // This searches upward from the current directory to find the .git directory,
-    // allowing the command to work from any subdirectory within the repository.
-    let repo = Repository::discover(".")?;
-
-    // Get the repository working directory.
-    let repo_path = repo.workdir().unwrap_or(Path::new("."));
-
-    // Load ignore patterns from the .gitignore file.
-    let ignore_set = match crate::ignore::load_ignore_patterns(repo_path) {
-        Ok(set) => {
-            debug!("Loaded ignore patterns: {}", set.len());
-            set
-        }
-        Err(e) => {
-            warn!("Warning: could not load ignore patterns: {}", e);
-            // Fallback to an empty GlobSet.
-            let builder = globset::GlobSetBuilder::new();
-            builder.build().unwrap_or_else(|_| {
-                warn!("Failed to create GlobSet, using empty set");
-                Default::default()
-            })
-        }
-    };
-
-    // Get HEAD tree, if available.
-    let head_tree = match repo.head() {
-        Ok(reference) => Some(reference.peel_to_tree()?),
-        Err(_) => None,
-    };
-
-    // Get the index (staged changes).
-    let index = repo.index()?;
-
-    // Create a diff between the HEAD tree (if any) and the current index.
-    let diff = repo.diff_tree_to_index(head_tree.as_ref(), Some(&index), None)?;
-
-    // Prepare a String buffer to collect diff output.
-    let mut diff_str = String::new();
-
-    // Print the diff in Patch format, filtering out ignored files.
-    diff.print(DiffFormat::Patch, |delta, _hunk, line| {
-        // Get the file path from the diff delta (prefer new file path, fallback to old).
-        let file_path = delta.new_file().path().or(delta.old_file().path());
-        if let Some(path) = file_path {
-            if ignore_set.is_match(path) {
-                // Skip lines for files that match ignore patterns.
-                return true;
-            }
-        }
-        if let Ok(content) = std::str::from_utf8(line.content()) {
-            diff_str.push_str(content);
-        }
-        true
-    })?;
-
-    Ok(diff_str)
-}
+/// Re-export get_staged_diff from the diff module
+pub use crate::diff::get_staged_diff;
 
 /// Commit staged changes with the given commit message
 pub fn commit_changes(commit_message: &str) -> Result<(), git2::Error> {

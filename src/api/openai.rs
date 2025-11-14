@@ -14,6 +14,18 @@ struct ChatResponse {
 }
 
 #[derive(Deserialize)]
+struct ErrorResponse {
+    error: ErrorDetail,
+}
+
+#[derive(Deserialize)]
+struct ErrorDetail {
+    message: String,
+    #[serde(rename = "type")]
+    error_type: String,
+}
+
+#[derive(Deserialize)]
 struct ChatChoice {
     message: ChatMessage,
 }
@@ -74,7 +86,11 @@ impl OpenAiApi {
         // Build the JSON request body.
         let user_description = context.unwrap_or("");
         let content = format!(
-            "Git Diff:\n{}\n\nUser Description:\n{}",
+            "Git Diff:
+            ```diff
+            {}
+            ```
+            User Description: {}",
             diff, user_description
         );
         let request_body = json!({
@@ -129,8 +145,35 @@ impl OpenAiApi {
                 )
             })?;
 
+        // Log the raw response for debugging
+        let response_text = response.text().map_err(|e| {
+            error!("Failed to read response text: {}", e);
+            crate::api::provider::ProviderError::ApiError(
+                reqwest::StatusCode::INTERNAL_SERVER_ERROR,
+                e.to_string(),
+            )
+        })?;
+        trace!("API Response: {}", response_text);
+
+        // Check if the response is an error first
+        if let Ok(error_response) = serde_json::from_str::<ErrorResponse>(&response_text) {
+            let error_msg = match error_response.error.error_type.as_str() {
+                "insufficient_quota" => {
+                    "OpenAI API quota exceeded. Please check your plan and billing details at https://platform.openai.com/account/billing"
+                }
+                "invalid_api_key" => "Invalid OpenAI API key. Please check your configuration.",
+                "rate_limit_exceeded" => "OpenAI API rate limit exceeded. Please try again later.",
+                _ => &error_response.error.message,
+            };
+            error!("{}", error_msg);
+            return Err(crate::api::provider::ProviderError::ApiError(
+                reqwest::StatusCode::BAD_REQUEST,
+                error_msg.to_string(),
+            ));
+        }
+
         // Deserialize the JSON response.
-        let json_response: ChatResponse = response.json().map_err(|e| {
+        let json_response: ChatResponse = serde_json::from_str(&response_text).map_err(|e| {
             error!("Failed to parse JSON response: {}", e);
             crate::api::provider::ProviderError::InvalidFormat
         })?;
