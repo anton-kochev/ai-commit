@@ -23,6 +23,7 @@ target/
 config.json
 
 # Claude Code
+CLAUDE.md
 /.claude/
 
 # Service Files
