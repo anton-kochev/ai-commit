@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2025-11-17
+
+### Changed
+- Refactored commit message generation system for improved clarity and maintainability
+- Updated cost estimation pricing for Claude Haiku model (new version pricing)
+- Enhanced Git diff formatting in API prompts with markdown code blocks for better readability
+- Improved system prompt wording to enhance commit message generation accuracy
+
+### Documentation
+- Added build and release workflow badges to README
+- Updated README to clarify Anthropic AI provider support
+
 ## [0.7.0] - 2025-11-14
 
 ### Added
@@ -22,5 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved instruction clarity with positive framing and better examples
 - Updated README.md to document the `--context-lines` option
 
-[Unreleased]: https://github.com/anton-kochev/ai-commit/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/anton-kochev/ai-commit/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/anton-kochev/ai-commit/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/anton-kochev/ai-commit/compare/v0.6.2...v0.7.0
