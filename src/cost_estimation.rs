@@ -34,7 +34,7 @@ pub fn estimate_cost(model: &str, prompt: &str) -> Result<CostEstimate> {
         "gpt-4-turbo-preview" | "gpt-4-0125-preview" | "gpt-4-1106-preview" => 10.00,
 
         // GPT-4 base models (legacy, expensive)
-        "gpt-4" | "gpt-4-0613" => 30.00,      // 8K context
+        "gpt-4" | "gpt-4-0613" => 30.00,         // 8K context
         "gpt-4-32k" | "gpt-4-32k-0613" => 60.00, // 32K context
 
         // GPT-3.5 Turbo family (legacy, cost-effective)
@@ -65,13 +65,16 @@ pub fn estimate_cost(model: &str, prompt: &str) -> Result<CostEstimate> {
         "claude-3-5-sonnet-20240620" => 3.00,
 
         // Claude Haiku family (fast and efficient)
-        "claude-haiku-4.5" | "claude-haiku-4-5-20250416" => 1.00,
+        "claude-haiku-4.5" | "claude-haiku-4-5-20250416" | "claude-haiku-4-5-20251001" => 1.00,
         "claude-haiku-3.5" | "claude-3-5-haiku-20241022" | "claude-3-5-haiku-latest" => 0.80,
         "claude-haiku-3" | "claude-3-haiku-20240307" => 0.25,
 
         // Default fallback for unknown models
         _ => {
-            warn!("Unknown model '{}', using default pricing of $2.50 per 1M input tokens.", model);
+            warn!(
+                "Unknown model '{}', using default pricing of $2.50 per 1M input tokens.",
+                model
+            );
             2.50 // Default to gpt-4o pricing
         }
     };

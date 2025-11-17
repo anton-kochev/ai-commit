@@ -74,7 +74,7 @@ impl AnthropicApi {
         // Build the JSON request body.
         let user_description = context.unwrap_or("");
         let content = format!(
-            "Git Diff:\n{}\n\nUser Description:\n{}",
+            "Git Diff:\n```diff\n{}\n```\n\nUser Description: {}",
             diff, user_description
         );
 
@@ -154,8 +154,8 @@ impl AnthropicApi {
                 crate::api::provider::ProviderError::InvalidFormat
             })?;
 
-        let commit_message = serde_json::from_value::<CommitMessageToolInput>(tool_use)
-            .map_err(|e| {
+        let commit_message =
+            serde_json::from_value::<CommitMessageToolInput>(tool_use).map_err(|e| {
                 error!("Failed to parse tool input: {}", e);
                 crate::api::provider::ProviderError::InvalidFormat
             })?;

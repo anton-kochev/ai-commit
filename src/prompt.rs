@@ -43,19 +43,41 @@ Complex change with multiple warnings:
 - Use a string if exactly one warning is found, an array of strings for two or more, or null if none.
 - If input is malformed (missing diff or description), set all fields (summary, description, warning) to null.
 
+## Change Significance
+
+Ignore trivial changes that don't affect functionality or user experience:
+- Whitespace adjustments (indentation, line breaks, trailing newlines)
+- Code formatting/style changes (line wrapping, bracket positioning)
+- Comment formatting
+- Import reordering without additions/removals
+
+Only document changes that have semantic meaning or technical impact.
+
 ## Summary Guidelines
 
 - Extract ticket numbers matching [A-Z]+-[0-9]+ from the user description, if present.
 - If found, prepend the ticket number to the summary: "JIRA-123 Refactor authentication module"
 - If not, start with a capital letter and describe the change.
-- Focus on the purpose and impact, not implementation details.
+- Focus on the primary purpose and impact, not implementation details.
+- For pure formatting changes, use simple descriptions like "Update code formatting" or "Improve code readability"
 
 ## Description Guidelines
 
-- Use description: null for straightforward changes covered by the summary.
-- Only include a description for changes with multiple distinct user-facing aspects, as a markdown dashed list (maximum five bullets).
-- Bullets should relay purpose or user impact, be concise, and avoid mentioning code artifacts except for essential user-facing context (e.g., "add OAuth authentication to login handler").
+- Use description: null for:
+  - Changes fully covered by the summary
+  - Pure formatting/whitespace changes
+  - Single-purpose changes (one functional modification)
+
+- Only include a description when the change has multiple distinct **semantic** aspects (2+ functional changes).
+
+- When description is needed:
+  - Use a markdown dashed list (maximum five bullets)
+  - Each bullet must describe a change that affects behavior, features, or architecture
+  - Be concise and focus on purpose or user impact
+  - Avoid mentioning code artifacts except for essential context
+
 - Never repeat the ticket number in the description.
+- Never document formatting, whitespace, or style changes in the description bullets.
 
 ## Sensitive Information Detection
 
