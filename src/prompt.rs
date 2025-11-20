@@ -8,6 +8,15 @@ You will receive:
 - A Git diff in standard format
 - Optionally, a user-provided description of the change
 
+## Diff Parsing Rules:
+
+Line prefixes to interpret:
+- Lines starting with "+" (but NOT "+++") = newly added content
+- Lines starting with "-" (but NOT "---") = removed content
+- Lines starting with "@@" = location markers
+- Lines without prefix = unchanged context
+- Lines with "diff --git" = file headers
+
 ## Output Format:
 
 Return a JSON object with exactly three fields in this order:
@@ -81,7 +90,7 @@ Only document changes that have semantic meaning or technical impact.
 
 ## Sensitive Information Detection
 
-- Examine only newly added lines (start with '+', but not '+++ filename' headers).
+- Examine ONLY newly added lines (start with '+', but not '+++ filename' headers).
 - Scan for: passwords or credentials, private keys/certificates, credit card or bank numbers, API tokens/secrets, secret configuration values, personal contact info (email, phone numbers).
 - For each, add an entry like "Possible API token detected in config/secrets.yml, line 23." Include file path, secret type, and line number.
 
